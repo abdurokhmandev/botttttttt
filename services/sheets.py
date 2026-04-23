@@ -1,0 +1,64 @@
+import logging
+from datetime import datetime
+from typing import Optional
+
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+
+from config import CREDENTIALS_PATH, SHEETS_ID
+
+logger = logging.getLogger(__name__)
+
+_SCOPES = [
+    "https://spreadsheets.google.com/feeds",
+    "https://www.googleapis.com/auth/drive",
+]
+
+# ── Column headers (written once if sheet is new) ─────────────────────────────
+HEADERS = ["Date", "Full Name", "Phone", "Grade", "District", "Source", "Telegram ID"]
+
+_client: Optional[gspread.Client] = None
+_sheet: Optional[gspread.Worksheet] = None
+
+
+def _get_sheet() -> gspread.Worksheet:
+    """Lazy-init the gspread client and worksheet."""
+    global _client, _sheet
+    if _sheet is not None:
+        return _sheet
+
+    creds = ServiceAccountCredentials.from_json_keyfile_name(CREDENTIALS_PATH, _SCOPES)
+    _client = gspread.authorize(creds)
+    spreadsheet = _client.open_by_key(SHEETS_ID)
+    _sheet = spreadsheet.sheet1
+
+    # Write headers if the sheet is empty
+    if not _sheet.row_values(1):
+        _sheet.append_row(HEADERS)
+
+    return _sheet
+
+
+def append_row(data: dict) -> None:
+    """
+    Append a registration row to Google Sheets.
+
+    Expected keys in data:
+        name, phone, grade, district, source, telegram_id
+    """
+    try:
+        sheet = _get_sheet()
+        row = [
+            datetime.now().strftime("%Y-%m-%d %H:%M"),
+            data.get("name", ""),
+            data.get("phone", ""),
+            data.get("grade", ""),
+            data.get("district", ""),
+            data.get("source", ""),
+            str(data.get("telegram_id", "")),
+        ]
+        sheet.append_row(row)
+        logger.info("✅ Row appended for user %s", data.get("telegram_id"))
+    except Exception:
+        logger.exception("❌ Failed to append row to Google Sheets")
+        # Swallow silently — never surface to user
