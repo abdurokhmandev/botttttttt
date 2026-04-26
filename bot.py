@@ -1,124 +1,54 @@
-from aiogram import Dispatcher, types
-from aiogram.types import (
-    ReplyKeyboardMarkup, KeyboardButton, WebAppInfo,
-    InlineKeyboardMarkup, InlineKeyboardButton,
-    ReplyKeyboardRemove,
+import asyncio
+import logging
+
+from aiogram import Bot, Dispatcher, executor
+from aiogram.contrib.fsm_storage.memory import MemoryStorage
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+
+from config import BOT_TOKEN
+from handlers.start  import register_start_handler
+from handlers.webapp import register_webapp_handler
+from handlers.videos import register_video_handlers
+from handlers.school import register_school_handler
+from services.reminder import check_reminders
+
+# ── Logging ───────────────────────────────────────────────────────────────────
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
 )
-from aiogram.dispatcher import FSMContext
-from aiogram.dispatcher.filters.state import State, StatesGroup
+logger = logging.getLogger(__name__)
 
-from config import WEBAPP_URL
-from storage import state_store
+# ── Bot & Dispatcher ──────────────────────────────────────────────────────────
+bot = Bot(token=BOT_TOKEN, parse_mode=None)
+dp  = Dispatcher(bot, storage=MemoryStorage())
 
-
-# ── FSM States for chat-based registration ────────────────────────────────────
-class RegForm(StatesGroup):
-    name     = State()
-    phone    = State()
-    grade    = State()
-    district = State()
+# ── Register Handlers ─────────────────────────────────────────────────────────
+register_webapp_handler(dp)   # WebApp data — eng birinchi (state='*' bilan)
+register_start_handler(dp)
+register_video_handlers(dp)
+register_school_handler(dp)
 
 
-def _build_start_keyboard():
-    if WEBAPP_URL:
-        # ReplyKeyboardMarkup — sendData() faqat shu bilan ishlaydi!
-        kb = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
-        kb.add(KeyboardButton(text="📝 Ro'yxatdan o'tish", web_app=WebAppInfo(url=WEBAPP_URL)))
-        return kb
-    else:
-        return InlineKeyboardMarkup(inline_keyboard=[[
-            InlineKeyboardButton(
-                text="📝 Register via Chat",
-                callback_data="start_registration",
-            )
-        ]])
-
-
-async def cmd_start(message: types.Message) -> None:
-    user_id = message.from_user.id
-    first_name = message.from_user.first_name or "there"
-
-    state_store.set_state(user_id, state_store.STARTED)
-
-    await message.answer(
-        text=(
-            f"👋 Xush kelibsiz, {first_name}!\n\n"
-            "Rahimov School ga xush kelibsiz.\n\n"
-            "Bepul dars videolariga kirish uchun qisqacha ro'yxatdan o'ting. "
-            "Bu atigi 30 soniya oladi! 🚀\n\n"
-            "Pastdagi tugmani bosing 👇"
-        ),
-        parse_mode="Markdown",
-        reply_markup=_build_start_keyboard(),
+# ── Scheduler ─────────────────────────────────────────────────────────────────
+async def on_startup(dispatcher: Dispatcher) -> None:
+    scheduler = AsyncIOScheduler()
+    scheduler.add_job(
+        check_reminders,
+        trigger="interval",
+        minutes=5,
+        kwargs={"bot": bot},
+        id="reminder_job",
+        replace_existing=True,
     )
+    scheduler.start()
+    logger.info("✅ Bot started. Reminder scheduler running every 5 minutes.")
 
 
-# ── Chat-based registration flow ─────────────────────────────────────────────
-async def cb_start_registration(callback: types.CallbackQuery, state: FSMContext) -> None:
-    await callback.answer()
-    await RegForm.name.set()
-    await callback.message.answer("✍️ To'liq ismingizni kiriting:", parse_mode="Markdown")
-
-
-async def reg_get_name(message: types.Message, state: FSMContext) -> None:
-    async with state.proxy() as data:
-        data["name"] = message.text.strip()
-    await RegForm.phone.set()
-    await message.answer("📞 Telefon raqamingizni kiriting (masalan: +998901234567):", parse_mode="Markdown")
-
-
-async def reg_get_phone(message: types.Message, state: FSMContext) -> None:
-    async with state.proxy() as data:
-        data["phone"] = message.text.strip()
-    await RegForm.grade.set()
-    await message.answer("🎓 Qaysi sinfda o'qiysiz? (masalan: 9, 10, 11):", parse_mode="Markdown")
-
-
-async def reg_get_grade(message: types.Message, state: FSMContext) -> None:
-    async with state.proxy() as data:
-        data["grade"] = message.text.strip()
-    await RegForm.district.set()
-    await message.answer("📍 Qaysi tumandan ekansiz?", parse_mode="Markdown")
-
-
-async def reg_get_district(message: types.Message, state: FSMContext) -> None:
-    from services import sheets
-    from handlers.webapp import _build_video_menu, _video_list_text
-
-    async with state.proxy() as data:
-        data["district"] = message.text.strip()
-        reg_data = dict(data)
-
-    user_id = message.from_user.id
-    sheets.append_row({
-        "name":        reg_data.get("name", ""),
-        "phone":       reg_data.get("phone", ""),
-        "grade":       reg_data.get("grade", ""),
-        "district":    reg_data.get("district", ""),
-        "source":      "Chat Registration",
-        "telegram_id": user_id,
-    })
-
-    state_store.set_state(user_id, state_store.REGISTERED)
-    await state.finish()
-
-    await message.answer(
-        text=(
-            "Ro'yxatdan o'tdingiz! 🎉\n\n"
-            "Quyidagi bepul darslardan birini tanlang:\n\n"
-            f"{_video_list_text()}"
-        ),
-        parse_mode="Markdown",
-        reply_markup=_build_video_menu(),
+# ── Entry Point ───────────────────────────────────────────────────────────────
+if __name__ == "__main__":
+    executor.start_polling(
+        dp,
+        skip_updates=True,
+        on_startup=on_startup,
     )
-
-
-def register_start_handler(dp: Dispatcher) -> None:
-    dp.register_message_handler(cmd_start, commands=["start"])
-
-    if not WEBAPP_URL:
-        dp.register_callback_query_handler(cb_start_registration, text="start_registration", state="*")
-        dp.register_message_handler(reg_get_name,     state=RegForm.name)
-        dp.register_message_handler(reg_get_phone,    state=RegForm.phone)
-        dp.register_message_handler(reg_get_grade,    state=RegForm.grade)
-        dp.register_message_handler(reg_get_district, state=RegForm.district)
