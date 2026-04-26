@@ -12,13 +12,14 @@ logger = logging.getLogger(__name__)
 
 
 def _build_video_menu() -> InlineKeyboardMarkup:
-    """Build the 5-button inline keyboard for video selection."""
-    buttons = [
-        InlineKeyboardButton(text=str(i), callback_data=f"video_{i}")
-        for i in range(1, 6)
-    ]
-    # Row of 5 buttons
-    return InlineKeyboardMarkup(inline_keyboard=[buttons])
+    """Build inline keyboard — har bir video alohida qatorda."""
+    rows = []
+    for i in range(1, 6):
+        title = VIDEOS.get(i, {}).get("title", f"Video {i}")
+        rows.append([
+            InlineKeyboardButton(text=f"📹 {i}. {title}", callback_data=f"video_{i}")
+        ])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 def _video_list_text() -> str:
@@ -70,4 +71,5 @@ def register_webapp_handler(dp: Dispatcher) -> None:
     dp.register_message_handler(
         handle_web_app_data,
         content_types=types.ContentType.WEB_APP_DATA,
+        state="*",
     )

@@ -24,8 +24,8 @@ bot = Bot(token=BOT_TOKEN, parse_mode=None)
 dp  = Dispatcher(bot, storage=MemoryStorage())
 
 # ── Register Handlers ─────────────────────────────────────────────────────────
+register_webapp_handler(dp)   # WebApp data — eng birinchi (state='*' bilan)
 register_start_handler(dp)
-register_webapp_handler(dp)
 register_video_handlers(dp)
 register_school_handler(dp)
 

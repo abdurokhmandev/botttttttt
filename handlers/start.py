@@ -20,13 +20,13 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 
 def _build_start_keyboard():
     if WEBAPP_URL:
-        # Full Mini App button MUST be a ReplyKeyboardMarkup to support sendData
-        keyboard = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
-        keyboard.add(KeyboardButton(
-            text="📝 Register",
-            web_app=WebAppInfo(url=WEBAPP_URL)
-        ))
-        return keyboard
+        # Mini App inline button
+        return InlineKeyboardMarkup(inline_keyboard=[[
+            InlineKeyboardButton(
+                    text="📝 Register",
+                    web_app=WebAppInfo(url=WEBAPP_URL)
+                )
+        ]])
     else:
         # Fallback: chat-based registration
         return InlineKeyboardMarkup(inline_keyboard=[[
