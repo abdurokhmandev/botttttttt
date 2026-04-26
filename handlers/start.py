@@ -1,8 +1,11 @@
 from aiogram import Dispatcher, types
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
+from aiogram.types import (
+    ReplyKeyboardMarkup, KeyboardButton, WebAppInfo,
+    InlineKeyboardMarkup, InlineKeyboardButton,
+    ReplyKeyboardRemove,
+)
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
-from aiogram.contrib.fsm_storage.memory import MemoryStorage
 
 from config import WEBAPP_URL
 from storage import state_store
@@ -16,19 +19,13 @@ class RegForm(StatesGroup):
     district = State()
 
 
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo, ReplyKeyboardMarkup, KeyboardButton
-
 def _build_start_keyboard():
     if WEBAPP_URL:
-        # Mini App inline button
-        return InlineKeyboardMarkup(inline_keyboard=[[
-            InlineKeyboardButton(
-                    text="📝 Register",
-                    web_app=WebAppInfo(url=WEBAPP_URL)
-                )
-        ]])
+        # ReplyKeyboardMarkup — sendData() faqat shu bilan ishlaydi!
+        kb = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
+        kb.add(KeyboardButton(text="📝 Ro'yxatdan o'tish", web_app=WebAppInfo(url=WEBAPP_URL)))
+        return kb
     else:
-        # Fallback: chat-based registration
         return InlineKeyboardMarkup(inline_keyboard=[[
             InlineKeyboardButton(
                 text="📝 Register via Chat",
@@ -45,11 +42,11 @@ async def cmd_start(message: types.Message) -> None:
 
     await message.answer(
         text=(
-            f"👋 Welcome, {first_name}!\n\n"
-            "We're glad you found Rahimov School.\n\n"
-            "To access your *free lesson videos*, please complete a quick registration form. "
-            "It only takes 30 seconds! 🚀\n\n"
-            "Tap the button below to get started 👇"
+            f"👋 Xush kelibsiz, {first_name}!\n\n"
+            "Rahimov School ga xush kelibsiz.\n\n"
+            "Bepul dars videolariga kirish uchun qisqacha ro'yxatdan o'ting. "
+            "Bu atigi 30 soniya oladi! 🚀\n\n"
+            "Pastdagi tugmani bosing 👇"
         ),
         parse_mode="Markdown",
         reply_markup=_build_start_keyboard(),
@@ -60,28 +57,28 @@ async def cmd_start(message: types.Message) -> None:
 async def cb_start_registration(callback: types.CallbackQuery, state: FSMContext) -> None:
     await callback.answer()
     await RegForm.name.set()
-    await callback.message.answer("✍️ Please enter your *full name*:", parse_mode="Markdown")
+    await callback.message.answer("✍️ To'liq ismingizni kiriting:", parse_mode="Markdown")
 
 
 async def reg_get_name(message: types.Message, state: FSMContext) -> None:
     async with state.proxy() as data:
         data["name"] = message.text.strip()
     await RegForm.phone.set()
-    await message.answer("📞 Enter your *phone number* (e.g. +998901234567):", parse_mode="Markdown")
+    await message.answer("📞 Telefon raqamingizni kiriting (masalan: +998901234567):", parse_mode="Markdown")
 
 
 async def reg_get_phone(message: types.Message, state: FSMContext) -> None:
     async with state.proxy() as data:
         data["phone"] = message.text.strip()
     await RegForm.grade.set()
-    await message.answer("🎓 Which *grade* are you in? (e.g. 9, 10, 11):", parse_mode="Markdown")
+    await message.answer("🎓 Qaysi sinfda o'qiysiz? (masalan: 9, 10, 11):", parse_mode="Markdown")
 
 
 async def reg_get_grade(message: types.Message, state: FSMContext) -> None:
     async with state.proxy() as data:
         data["grade"] = message.text.strip()
     await RegForm.district.set()
-    await message.answer("📍 Which *district* are you from?", parse_mode="Markdown")
+    await message.answer("📍 Qaysi tumandan ekansiz?", parse_mode="Markdown")
 
 
 async def reg_get_district(message: types.Message, state: FSMContext) -> None:
@@ -107,8 +104,8 @@ async def reg_get_district(message: types.Message, state: FSMContext) -> None:
 
     await message.answer(
         text=(
-            "Thank you for registering! 🎉\n\n"
-            "Choose a free lesson below:\n\n"
+            "Ro'yxatdan o'tdingiz! 🎉\n\n"
+            "Quyidagi bepul darslardan birini tanlang:\n\n"
             f"{_video_list_text()}"
         ),
         parse_mode="Markdown",
@@ -119,11 +116,9 @@ async def reg_get_district(message: types.Message, state: FSMContext) -> None:
 def register_start_handler(dp: Dispatcher) -> None:
     dp.register_message_handler(cmd_start, commands=["start"])
 
-    # Only register chat-registration handlers if no webapp URL
     if not WEBAPP_URL:
         dp.register_callback_query_handler(cb_start_registration, text="start_registration", state="*")
         dp.register_message_handler(reg_get_name,     state=RegForm.name)
         dp.register_message_handler(reg_get_phone,    state=RegForm.phone)
         dp.register_message_handler(reg_get_grade,    state=RegForm.grade)
         dp.register_message_handler(reg_get_district, state=RegForm.district)
-
