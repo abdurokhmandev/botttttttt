@@ -1,0 +1,9 @@
+[build]
+builder = "nixpacks"
+
+[build.nixpacksPlan.phases.setup]
+nixPkgs = ["python311", "python311Packages.pip"]
+
+[deploy]
+startCommand = "python bot.py"
+restartPolicyType = "always"
