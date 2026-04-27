@@ -7,10 +7,14 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from config import BOT_TOKEN
 from handlers.start  import register_start_handler
-from handlers.webapp import register_webapp_handler
+from handlers.webapp import register_webapp_handler, webapp_api_handler
 from handlers.videos import register_video_handlers
 from handlers.school import register_school_handler
 from services.reminder import check_reminders
+
+import os
+from aiohttp import web
+import aiohttp_cors
 
 # ── Logging ───────────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -43,6 +47,32 @@ async def on_startup(dispatcher: Dispatcher) -> None:
     )
     scheduler.start()
     logger.info("✅ Bot started. Reminder scheduler running every 5 minutes.")
+
+    # ── Start Web Server for WebApp API ───────────────────────────────────────────
+    app = web.Application()
+    cors = aiohttp_cors.setup(app, defaults={
+        "*": aiohttp_cors.ResourceOptions(
+            allow_credentials=True,
+            expose_headers="*",
+            allow_headers="*",
+        )
+    })
+
+    # Wrap the handler so it can access the bot object
+    async def handler_wrapper(request):
+        return await webapp_api_handler(request, bot)
+
+    app.router.add_post('/api/submit', handler_wrapper)
+
+    for route in list(app.router.routes()):
+        cors.add(route)
+
+    runner = web.AppRunner(app)
+    await runner.setup()
+    port = int(os.environ.get("PORT", 8080))
+    site = web.TCPSite(runner, '0.0.0.0', port)
+    await site.start()
+    logger.info(f"✅ Web server for WebApp started on port {port}.")
 
 
 # ── Entry Point ───────────────────────────────────────────────────────────────
