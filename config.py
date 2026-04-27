@@ -17,7 +17,7 @@ def _load_video(key: str) -> dict:
     try:
         return json.loads(raw)
     except json.JSONDecodeError:
-        return {"title": key, "file_id": "", "url": ""}
+        return {"title": key, "url": "", "photo": ""}
 
 
 # ── Core ─────────────────────────────────────────────────────────────────────
@@ -30,9 +30,6 @@ SCHOOL_INFO: str = os.getenv(
     "SCHOOL_INFO",
     "🏫 Rahimov School\n\nContact us for more information.",
 ).replace("\\n", "\n")
-
-# ── Video Photo (URL or Telegram file_id) ────────────────────────────────────
-VIDEO_PHOTO: str = os.getenv("VIDEO_PHOTO", "")
 
 # ── Videos ───────────────────────────────────────────────────────────────────
 VIDEOS: dict[int, dict] = {

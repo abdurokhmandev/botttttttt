@@ -3,7 +3,7 @@ import logging
 from aiogram import Dispatcher, types
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-from config import VIDEOS, VIDEO_PHOTO
+from config import VIDEOS
 
 logger = logging.getLogger(__name__)
 
@@ -29,8 +29,8 @@ async def handle_video_callback(callback: types.CallbackQuery) -> None:
         return
 
     title   = video.get("title", f"Video {index}")
-    file_id = video.get("file_id", "").strip()
     url     = video.get("url", "").strip()
+    photo   = video.get("photo", "").strip()
 
     # ── Build combined caption ────────────────────────────────────────────────
     lines = [f"📹 <b>{title}</b>"]
@@ -43,7 +43,6 @@ async def handle_video_callback(callback: types.CallbackQuery) -> None:
     caption = "\n".join(lines)
 
     # ── Send as ONE message with photo + inline button ────────────────────────
-    photo = VIDEO_PHOTO.strip() if VIDEO_PHOTO else ""
 
     if photo:
         try:
