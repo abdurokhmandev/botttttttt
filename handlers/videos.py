@@ -3,7 +3,7 @@ import logging
 from aiogram import Dispatcher, types
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-from config import VIDEOS
+from config import VIDEOS, VIDEO_PHOTO
 
 logger = logging.getLogger(__name__)
 
@@ -32,27 +32,35 @@ async def handle_video_callback(callback: types.CallbackQuery) -> None:
     file_id = video.get("file_id", "").strip()
     url     = video.get("url", "").strip()
 
-    # ── 1. Send video (if file_id available) ─────────────────────────────────
-    if file_id:
-        try:
-            await callback.message.answer_video(
-                video=file_id,
-                caption=f"📹 *{title}*",
-                parse_mode="Markdown",
-            )
-        except Exception:
-            logger.exception("❌ Failed to send video file_id for video_%s", index)
-            # Fall through to URL-only delivery
-    else:
-        await callback.message.answer(f"📹 *{title}*", parse_mode="Markdown")
-
-    # ── 2. Send URL ───────────────────────────────────────────────────────────
+    # ── Build combined caption ────────────────────────────────────────────────
+    lines = [f"📹 *{title}*"]
+    lines.append("——————————————————————")
     if url:
-        await callback.message.answer(f"🔗 Watch here: {url}")
+        lines.append(f"🔗 Watch here: {url}")
+        lines.append("——————————————————————")
+    lines.append("Want to know more about Rahimov School?")
 
-    # ── 3. School info button ─────────────────────────────────────────────────
+    caption = "\n".join(lines)
+
+    # ── Send as ONE message with photo + inline button ────────────────────────
+    photo = VIDEO_PHOTO.strip() if VIDEO_PHOTO else ""
+
+    if photo:
+        try:
+            await callback.message.answer_photo(
+                photo=photo,
+                caption=caption,
+                parse_mode="Markdown",
+                reply_markup=_build_school_button(),
+            )
+            return
+        except Exception:
+            logger.exception("❌ Failed to send photo, falling back to text")
+
+    # Fallback: send as plain text if no photo or photo failed
     await callback.message.answer(
-        "Want to know more about Rahimov School?",
+        caption,
+        parse_mode="Markdown",
         reply_markup=_build_school_button(),
     )
 
