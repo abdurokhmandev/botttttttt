@@ -33,7 +33,7 @@ async def handle_video_callback(callback: types.CallbackQuery) -> None:
     url     = video.get("url", "").strip()
 
     # ── Build combined caption ────────────────────────────────────────────────
-    lines = [f"📹 *{title}*"]
+    lines = [f"📹 <b>{title}</b>"]
     lines.append("——————————————————————")
     if url:
         lines.append(f"🔗 Watch here: {url}")
@@ -50,7 +50,7 @@ async def handle_video_callback(callback: types.CallbackQuery) -> None:
             await callback.message.answer_photo(
                 photo=photo,
                 caption=caption,
-                parse_mode="Markdown",
+                parse_mode="HTML",
                 reply_markup=_build_school_button(),
             )
             return
@@ -60,7 +60,7 @@ async def handle_video_callback(callback: types.CallbackQuery) -> None:
     # Fallback: send as plain text if no photo or photo failed
     await callback.message.answer(
         caption,
-        parse_mode="Markdown",
+        parse_mode="HTML",
         reply_markup=_build_school_button(),
     )
 
