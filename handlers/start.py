@@ -21,10 +21,12 @@ class RegForm(StatesGroup):
 
 def _build_start_keyboard():
     if WEBAPP_URL:
-        # ReplyKeyboardMarkup — sendData() faqat shu bilan ishlaydi!
-        kb = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
-        kb.add(KeyboardButton(text="📝 Ro'yxatdan o'tish", web_app=WebAppInfo(url=WEBAPP_URL)))
-        return kb
+        return InlineKeyboardMarkup(inline_keyboard=[[
+            InlineKeyboardButton(
+                text="📝 Ro'yxatdan o'tish",
+                web_app=WebAppInfo(url=WEBAPP_URL)
+            )
+        ]])
     else:
         return InlineKeyboardMarkup(inline_keyboard=[[
             InlineKeyboardButton(
