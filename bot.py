@@ -52,9 +52,10 @@ async def on_startup(dispatcher: Dispatcher) -> None:
     app = web.Application()
     cors = aiohttp_cors.setup(app, defaults={
         "*": aiohttp_cors.ResourceOptions(
-            allow_credentials=True,
+            allow_credentials=False,   # Must be False when allow_origin="*"
             expose_headers="*",
             allow_headers="*",
+            allow_methods=["POST", "OPTIONS"],  # iOS preflight requires this
         )
     })
 
