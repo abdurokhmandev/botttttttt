@@ -63,6 +63,12 @@ async def handle_web_app_data(message: types.Message) -> None:
         reply_markup=_build_video_menu(),
     )
 
+    # Ro'yxatdan o'tish taklifnomasi xabarini o'chirish
+    try:
+        await message.bot.delete_message(message.chat.id, message.message_id)
+    except Exception:
+        pass
+
 
 async def webapp_api_handler(request: web.Request, bot: Bot) -> web.Response:
     try:
@@ -98,6 +104,14 @@ async def webapp_api_handler(request: web.Request, bot: Bot) -> web.Response:
         )
     except Exception as e:
         logger.error("Failed to send success message to user %s: %s", user_id, e)
+
+    # Ro'yxatdan o'tish taklifnomasi xabarini o'chirish
+    message_id = data.get("message_id")
+    if message_id:
+        try:
+            await bot.delete_message(chat_id=user_id, message_id=message_id)
+        except Exception:
+            pass
 
     return web.json_response({"ok": True})
 

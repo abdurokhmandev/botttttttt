@@ -10,8 +10,15 @@ logger = logging.getLogger(__name__)
 
 def _build_school_button() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[[
-        InlineKeyboardButton(text="🏫 Learn about the school", callback_data="school_info")
+        InlineKeyboardButton(text="🏫 Rahimov School", callback_data="school_info")
     ]])
+
+
+def _build_youtube_button(url: str) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="▶️ Youtube'da ko'ring", url=url)],
+        [InlineKeyboardButton(text="🏫 Rahimov School", callback_data="school_info")],
+    ])
 
 
 async def handle_video_callback(callback: types.CallbackQuery) -> None:
@@ -28,39 +35,25 @@ async def handle_video_callback(callback: types.CallbackQuery) -> None:
         await callback.message.answer("⚠️ Video not found.")
         return
 
-    title   = video.get("title", f"Video {index}")
-    url     = video.get("url", "").strip()
-    photo   = video.get("photo", "").strip()
+    title = video.get("title", f"Video {index}")
+    url   = video.get("url", "").strip()
 
-    # ── Build combined caption ────────────────────────────────────────────────
+    # ── Build message text ────────────────────────────────────────────────────
     lines = [f"📹 <b>{title}</b>"]
     lines.append("——————————————————————")
+    lines.append("Rahimov School haqida ko'proq ma'lumot olishni xohlaysizmi?")
+    text = "\n".join(lines)
+
+    # ── Send inline button with YouTube link (no cover photo) ─────────────────
     if url:
-        lines.append(f"🔗 Watch here: {url}")
-        lines.append("——————————————————————")
-    lines.append("Want to know more about Rahimov School?")
+        markup = _build_youtube_button(url)
+    else:
+        markup = _build_school_button()
 
-    caption = "\n".join(lines)
-
-    # ── Send as ONE message with photo + inline button ────────────────────────
-
-    if photo:
-        try:
-            await callback.message.answer_photo(
-                photo=photo,
-                caption=caption,
-                parse_mode="HTML",
-                reply_markup=_build_school_button(),
-            )
-            return
-        except Exception:
-            logger.exception("❌ Failed to send photo, falling back to text")
-
-    # Fallback: send as plain text if no photo or photo failed
     await callback.message.answer(
-        caption,
+        text,
         parse_mode="HTML",
-        reply_markup=_build_school_button(),
+        reply_markup=markup,
     )
 
 

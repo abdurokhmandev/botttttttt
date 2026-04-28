@@ -37,22 +37,35 @@ def _build_start_keyboard():
 
 
 async def cmd_start(message: types.Message) -> None:
+    import os
     user_id = message.from_user.id
     first_name = message.from_user.first_name or "there"
 
     state_store.set_state(user_id, state_store.STARTED)
 
-    await message.answer(
-        text=(
-            f"👋 Xush kelibsiz, {first_name}!\n\n"
-            "Rahimov School ga xush kelibsiz.\n\n"
-            "Bepul dars videolariga kirish uchun qisqacha ro'yxatdan o'ting. "
-            "Bu atigi 30 soniya oladi! 🚀\n\n"
-            "Pastdagi tugmani bosing 👇"
-        ),
-        parse_mode="Markdown",
-        reply_markup=_build_start_keyboard(),
+    caption = (
+        f"👋 Xush kelibsiz, {first_name}!\n\n"
+        "Rahimov School ga xush kelibsiz.\n\n"
+        "Bepul dars videolariga kirish uchun qisqacha ro'yxatdan o'ting. "
+        "Bu atigi 30 soniya oladi! 🚀\n\n"
+        "Pastdagi tugmani bosing 👇"
     )
+
+    cover_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "static", "cover.jpg")
+    if os.path.exists(cover_path):
+        with open(cover_path, "rb") as photo:
+            await message.answer_photo(
+                photo=photo,
+                caption=caption,
+                parse_mode="Markdown",
+                reply_markup=_build_start_keyboard(),
+            )
+    else:
+        await message.answer(
+            text=caption,
+            parse_mode="Markdown",
+            reply_markup=_build_start_keyboard(),
+        )
 
 
 # ── Chat-based registration flow ─────────────────────────────────────────────
