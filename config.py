@@ -11,15 +11,6 @@ def _require(key: str) -> str:
         raise RuntimeError(f"Missing required environment variable: {key}")
     return val
 
-
-def _load_video(key: str) -> dict:
-    raw = os.getenv(key, "{}")
-    try:
-        return json.loads(raw)
-    except json.JSONDecodeError:
-        return {"title": key, "url": "", "photo": "", "video": ""}
-
-
 # ── Core ─────────────────────────────────────────────────────────────────────
 BOT_TOKEN: str = _require("BOT_TOKEN")
 SHEETS_ID: str = _require("SHEETS_ID")
@@ -31,14 +22,37 @@ SCHOOL_INFO: str = os.getenv(
     "🏫 Rahimov School\n\nContact us for more information.",
 ).replace("\\n", "\n")
 
+
+
 # ── Videos ───────────────────────────────────────────────────────────────────
 VIDEOS: dict[int, dict] = {
-    1: _load_video("VIDEO_1"),
-    2: _load_video("VIDEO_2"),
-    3: _load_video("VIDEO_3"),
-    4: _load_video("VIDEO_4"),
-    5: _load_video("VIDEO_5"),
+    1: {
+        "photo": os.path.join("static", "aka.png"),
+        "title": "Aka-uka va opa-singillar o'rtasidagi muammo | Rahimov Suhbatlari",
+        "url": "https://youtu.be/ApLGhoQCuMw?si=zIYyOYpBaogyYJQo"
+    },
+    2: {
+        "photo": os.path.join("static", "otalar.png"),
+        "title": "Ota va o'g'il munosabati haqida gaplashamiz | Rahimov Suhbatlari",
+        "url": "https://youtu.be/JzofE9oMaV8?si=iTHzQwIyIMVh4vNK"
+    },
+    3: {
+        "photo": os.path.join("static", "band.png"),
+        "title": "Tarbiya uchun vaqt yo'q ! | Rahimov Suhbatlari",
+        "url": "https://youtu.be/xbfkK7xV7SI?si=LaMetMjOgkfVtJDz"
+    },
+    4: {
+        "photo": os.path.join("static", "kasb.png"),
+        "title": "Farzandim bloger bo'lmoqchi | Rahimov Suhbatlari",
+        "url": "https://youtu.be/ApLGhoQCuMw?si=byFbFMI-EOu-_ToU"
+    },
+    5: {
+        "photo": os.path.join("static", "farzandim.png"),
+        "title": "Bola bilan do'stlashing ! | Rahimov Suhbatlari",
+        "url": "https://youtu.be/8-6Wcy9DE_c?si=3qqCa4v2fjF0F_k8"
+    },
 }
+
 
 # ── Paths ────────────────────────────────────────────────────────────────────
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
