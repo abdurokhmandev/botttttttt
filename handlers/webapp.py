@@ -55,8 +55,8 @@ async def handle_web_app_data(message: types.Message) -> None:
     # Keyin video menyuni chiqaramiz
     await message.answer(
         text=(
-            "Ro'yxatdan o'tdingiz! 🎉\n\n"
-            "Quyidagi bepul darslardan birini tanlang:\n\n"
+            
+            "🎧 Qaysi darsni tinglamoqchisiz?\n\n"
             f"{_video_list_text()}"
         ),
         reply_markup=_build_video_menu(),
@@ -94,8 +94,7 @@ async def webapp_api_handler(request: web.Request, bot: Bot) -> web.Response:
         await bot.send_message(
             chat_id=user_id,
             text=(
-                "Ro'yxatdan o'tdingiz! 🎉\n\n"
-                "Quyidagi bepul darslardan birini tanlang:\n\n"
+                "🎧 Qaysi darsni tinglamoqchisiz?\n\n"
                 f"{_video_list_text()}"
             ),
             reply_markup=_build_video_menu(),

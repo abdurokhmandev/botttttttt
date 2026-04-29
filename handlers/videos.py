@@ -32,53 +32,50 @@ async def handle_video_callback(callback: types.CallbackQuery) -> None:
         await callback.message.answer("⚠️ Video topilmadi.")
         return
 
-    title      = video.get("title", f"Video {index}")
+    title      = video.get("title", f"Dars {index}")
     url        = video.get("url", "").strip()
-    video_path = video.get("video", "").strip()
+    photo_path = video.get("photo", "").strip() or video.get("video", "").strip()
 
     # ── Build caption ──────────────────────────────────────────────────────────
     caption = (
-        f"📹 <b>{title}</b>\n"
+        f"🖼️ <b>{title}</b>\n"
         "——————————————————————\n"
         "Rahimov School haqida ko'proq ma'lumot olishni xohlaysizmi?"
     )
 
     markup = _build_markup(url)
 
-    # ── Send video (from URL or local file) ────────────────────────────────────
-    if video_path.startswith("http://") or video_path.startswith("https://"):
+    # ── Send photo (from URL, local file, or file_id) ──────────────────────────
+    if not photo_path:
+        await callback.message.answer(caption, parse_mode="HTML", reply_markup=markup)
+        return
+
+    # 1. Try URL
+    if photo_path.startswith(("http://", "https://")):
         try:
-            await callback.message.answer_video(
-                video=video_path,
-                caption=caption,
-                parse_mode="HTML",
-                reply_markup=markup,
-            )
+            await callback.message.answer_photo(photo=photo_path, caption=caption, parse_mode="HTML", reply_markup=markup)
             return
         except Exception:
-            logger.exception("❌ Failed to send video from URL for index %s, falling back", index)
-    else:
-        # ── Resolve local video path ───────────────────────────────────────────────
-        if video_path:
-            abs_path = video_path if os.path.isabs(video_path) else os.path.join(BASE_DIR, video_path)
-        else:
-            abs_path = ""
-    
-        # ── Send actual video file if it exists ────────────────────────────────────
-        if abs_path and os.path.exists(abs_path):
-            try:
-                with open(abs_path, "rb") as vf:
-                    await callback.message.answer_video(
-                        video=vf,
-                        caption=caption,
-                        parse_mode="HTML",
-                        reply_markup=markup,
-                    )
-                return
-            except Exception:
-                logger.exception("❌ Failed to send local video for index %s, falling back", index)
+            logger.exception("❌ Failed to send photo URL for index %s", index)
 
-    # ── Fallback: text message with inline buttons ─────────────────────────────
+    # 2. Try Local File
+    abs_path = photo_path if os.path.isabs(photo_path) else os.path.join(BASE_DIR, photo_path)
+    if os.path.exists(abs_path) and os.path.isfile(abs_path):
+        try:
+            with open(abs_path, "rb") as pf:
+                await callback.message.answer_photo(photo=pf, caption=caption, parse_mode="HTML", reply_markup=markup)
+            return
+        except Exception:
+            logger.exception("❌ Failed to send local photo for index %s", index)
+
+    # 3. Try as file_id (as last resort)
+    try:
+        await callback.message.answer_photo(photo=photo_path, caption=caption, parse_mode="HTML", reply_markup=markup)
+        return
+    except Exception:
+        logger.exception("❌ Failed to send photo as file_id for index %s", index)
+
+    # ── Fallback: text message ─────────────────────────────────────────────────
     await callback.message.answer(
         caption,
         parse_mode="HTML",

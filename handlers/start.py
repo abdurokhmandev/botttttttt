@@ -119,8 +119,8 @@ async def reg_get_district(message: types.Message, state: FSMContext) -> None:
 
     await message.answer(
         text=(
-            "Ro'yxatdan o'tdingiz! 🎉\n\n"
-            "Quyidagi bepul darslardan birini tanlang:\n\n"
+            
+            "🎧 Qaysi darsni tinglamoqchisiz?\n\n"
             f"{_video_list_text()}"
         ),
         reply_markup=_build_video_menu(),
