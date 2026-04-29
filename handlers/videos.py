@@ -8,6 +8,22 @@ from config import VIDEOS, BASE_DIR
 
 logger = logging.getLogger(__name__)
 
+# YouTube video ID dan thumbnail URL olish
+def _yt_thumbnail(url: str) -> str:
+    """YouTube URL dan maxresdefault thumbnail URL hosil qilish."""
+    import re
+    patterns = [
+        r"youtu\.be/([A-Za-z0-9_-]{11})",
+        r"youtube\.com/watch\?v=([A-Za-z0-9_-]{11})",
+        r"youtube\.com/embed/([A-Za-z0-9_-]{11})",
+    ]
+    for pat in patterns:
+        m = re.search(pat, url)
+        if m:
+            vid_id = m.group(1)
+            return f"https://img.youtube.com/vi/{vid_id}/hqdefault.jpg"
+    return ""
+
 
 def _build_markup(url: str) -> InlineKeyboardMarkup:
     """Two inline buttons: YouTube link + school info."""
@@ -32,9 +48,8 @@ async def handle_video_callback(callback: types.CallbackQuery) -> None:
         await callback.message.answer("⚠️ Video topilmadi.")
         return
 
-    title      = video.get("title", f"Video {index}")
-    url        = video.get("url", "").strip()
-    video_path = video.get("video", "").strip()
+    title = video.get("title", f"Video {index}")
+    url   = video.get("url", "").strip()
 
     # ── Build caption ──────────────────────────────────────────────────────────
     caption = (
@@ -45,27 +60,37 @@ async def handle_video_callback(callback: types.CallbackQuery) -> None:
 
     markup = _build_markup(url)
 
-    # ── Resolve local video path ───────────────────────────────────────────────
-    if video_path:
-        abs_path = video_path if os.path.isabs(video_path) else os.path.join(BASE_DIR, video_path)
-    else:
-        abs_path = ""
+    # ── YouTube thumbnail orqali send_photo ────────────────────────────────────
+    thumbnail_url = _yt_thumbnail(url) if url else ""
 
-    # ── Send actual video file if it exists ────────────────────────────────────
-    if abs_path and os.path.exists(abs_path):
+    if thumbnail_url:
         try:
-            with open(abs_path, "rb") as vf:
-                await callback.message.answer_video(
-                    video=vf,
+            await callback.message.answer_photo(
+                photo=thumbnail_url,
+                caption=caption,
+                parse_mode="HTML",
+                reply_markup=markup,
+            )
+            return
+        except Exception:
+            logger.exception("❌ Failed to send YouTube thumbnail for index %s, falling back", index)
+
+    # ── Cover rasmidan foydalanish ─────────────────────────────────────────────
+    cover_path = os.path.join(BASE_DIR, "static", "cover.png")
+    if os.path.exists(cover_path):
+        try:
+            with open(cover_path, "rb") as cf:
+                await callback.message.answer_photo(
+                    photo=cf,
                     caption=caption,
                     parse_mode="HTML",
                     reply_markup=markup,
                 )
             return
         except Exception:
-            logger.exception("❌ Failed to send local video for index %s, falling back", index)
+            logger.exception("❌ Failed to send cover photo for index %s, falling back", index)
 
-    # ── Fallback: text message with inline buttons ─────────────────────────────
+    # ── Oxirgi fallback: faqat matn ───────────────────────────────────────────
     await callback.message.answer(
         caption,
         parse_mode="HTML",
