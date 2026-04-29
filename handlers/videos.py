@@ -1,24 +1,21 @@
 import logging
+import os
 
 from aiogram import Dispatcher, types
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-from config import VIDEOS
+from config import VIDEOS, BASE_DIR
 
 logger = logging.getLogger(__name__)
 
 
-def _build_school_button() -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup(inline_keyboard=[[
-        InlineKeyboardButton(text="🏫 Rahimov School", callback_data="school_info")
-    ]])
-
-
-def _build_youtube_button(url: str) -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="▶️ Youtube'da ko'ring", url=url)],
-        [InlineKeyboardButton(text="🏫 Rahimov School", callback_data="school_info")],
-    ])
+def _build_markup(url: str) -> InlineKeyboardMarkup:
+    """Two inline buttons: YouTube link + school info."""
+    rows = []
+    if url:
+        rows.append([InlineKeyboardButton(text="▶️ Youtube'da ko'ring", url=url)])
+    rows.append([InlineKeyboardButton(text="🏫 Rahimov School", callback_data="school_info")])
+    return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 async def handle_video_callback(callback: types.CallbackQuery) -> None:
@@ -32,26 +29,45 @@ async def handle_video_callback(callback: types.CallbackQuery) -> None:
 
     video = VIDEOS.get(index)
     if not video:
-        await callback.message.answer("⚠️ Video not found.")
+        await callback.message.answer("⚠️ Video topilmadi.")
         return
 
-    title = video.get("title", f"Video {index}")
-    url   = video.get("url", "").strip()
+    title      = video.get("title", f"Video {index}")
+    url        = video.get("url", "").strip()
+    video_path = video.get("video", "").strip()
 
-    # ── Build message text ────────────────────────────────────────────────────
-    lines = [f"📹 <b>{title}</b>"]
-    lines.append("——————————————————————")
-    lines.append("Rahimov School haqida ko'proq ma'lumot olishni xohlaysizmi?")
-    text = "\n".join(lines)
+    # ── Build caption ──────────────────────────────────────────────────────────
+    caption = (
+        f"📹 <b>{title}</b>\n"
+        "——————————————————————\n"
+        "Rahimov School haqida ko'proq ma'lumot olishni xohlaysizmi?"
+    )
 
-    # ── Send inline button with YouTube link (no cover photo) ─────────────────
-    if url:
-        markup = _build_youtube_button(url)
+    markup = _build_markup(url)
+
+    # ── Resolve local video path ───────────────────────────────────────────────
+    if video_path:
+        abs_path = video_path if os.path.isabs(video_path) else os.path.join(BASE_DIR, video_path)
     else:
-        markup = _build_school_button()
+        abs_path = ""
 
+    # ── Send actual video file if it exists ────────────────────────────────────
+    if abs_path and os.path.exists(abs_path):
+        try:
+            with open(abs_path, "rb") as vf:
+                await callback.message.answer_video(
+                    video=vf,
+                    caption=caption,
+                    parse_mode="HTML",
+                    reply_markup=markup,
+                )
+            return
+        except Exception:
+            logger.exception("❌ Failed to send local video for index %s, falling back", index)
+
+    # ── Fallback: text message with inline buttons ─────────────────────────────
     await callback.message.answer(
-        text,
+        caption,
         parse_mode="HTML",
         reply_markup=markup,
     )

@@ -59,7 +59,6 @@ async def handle_web_app_data(message: types.Message) -> None:
             "Quyidagi bepul darslardan birini tanlang:\n\n"
             f"{_video_list_text()}"
         ),
-        parse_mode="Markdown",
         reply_markup=_build_video_menu(),
     )
 
@@ -99,11 +98,11 @@ async def webapp_api_handler(request: web.Request, bot: Bot) -> web.Response:
                 "Quyidagi bepul darslardan birini tanlang:\n\n"
                 f"{_video_list_text()}"
             ),
-            parse_mode="Markdown",
             reply_markup=_build_video_menu(),
         )
     except Exception as e:
         logger.error("Failed to send success message to user %s: %s", user_id, e)
+        return web.json_response({"ok": False, "error": "Failed to send message"}, status=500)
 
     # Ro'yxatdan o'tish taklifnomasi xabarini o'chirish
     message_id = data.get("message_id")

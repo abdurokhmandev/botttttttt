@@ -51,7 +51,7 @@ async def cmd_start(message: types.Message) -> None:
         "Pastdagi tugmani bosing 👇"
     )
 
-    cover_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "static", "cover.jpg")
+    cover_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "static", "cover.png")
     if os.path.exists(cover_path):
         with open(cover_path, "rb") as photo:
             await message.answer_photo(
@@ -123,7 +123,6 @@ async def reg_get_district(message: types.Message, state: FSMContext) -> None:
             "Quyidagi bepul darslardan birini tanlang:\n\n"
             f"{_video_list_text()}"
         ),
-        parse_mode="Markdown",
         reply_markup=_build_video_menu(),
     )
 

@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Ro'yxatdan o'tish</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+
+  <style>
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --green: #14c767;
+      --green-dark: #0fa855;
+      --green-light: #e8faf1;
+      --red: #e53935;
+      --red-light: #fff0f0;
+      --gray-1: #111111;
+      --gray-2: #444444;
+      --gray-3: #888888;
+      --gray-4: #cccccc;
+      --gray-5: #f4f4f4;
+      --white: #ffffff;
+      --radius: 12px;
+      --radius-sm: 8px;
+    }
+
+    body {
+      background: var(--white);
+      color: var(--gray-1);
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      min-height: 100vh;
+      min-height: -webkit-fill-available;
+      overflow-x: hidden;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    html {
+      height: -webkit-fill-available;
+    }
+
+    .wrapper {
+      max-width: 420px;
+      margin: 0 auto;
+      padding: 24px 16px 40px;
+    }
+
+    .header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+
+    .logo-ring {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      border: 3px solid var(--green);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 0 6px var(--green-light);
+    }
+
+    .logo-ring img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .header h1 {
+      font-size: 28px;
+      font-weight: 900;
+      color: var(--gray-1);
+      letter-spacing: -0.5px;
+    }
+
+    .header p {
+      font-size: 13px;
+      font-weight: 400;
+      color: var(--gray-3);
+    }
+
+    .card {
+      background: var(--white);
+      border: 1.5px solid #e8e8e8;
+      border-radius: 16px;
+      padding: 20px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+
+    label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--green-dark);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    .input-wrap {
+      position: relative;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 11px 14px;
+      border-radius: var(--radius-sm);
+      border: 1.5px solid var(--gray-4);
+      font-family: 'Inter', sans-serif;
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--gray-1);
+      background: var(--white);
+      transition: border-color 0.18s, box-shadow 0.18s, background 0.18s;
+      appearance: none;
+      -webkit-appearance: none;
+      outline: none;
+      -webkit-box-shadow: none;
+      box-shadow: none;
+    }
+
+    input::placeholder {
+      color: var(--gray-4);
+      font-weight: 400;
+    }
+
+    select.placeholder-active {
+      color: var(--gray-4);
+      font-weight: 400;
+    }
+
+    select option {
+      color: var(--gray-1);
+      font-weight: 500;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--green);
+      box-shadow: 0 0 0 3px rgba(20,199,103,0.13);
+      -webkit-box-shadow: 0 0 0 3px rgba(20,199,103,0.13);
+    }
+
+    .select-wrap {
+      position: relative;
+    }
+    .select-wrap::after {
+      content: '';
+      pointer-events: none;
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 0;
+      height: 0;
+      border-left: 5px solid transparent;
+      border-right: 5px solid transparent;
+      border-top: 6px solid var(--gray-3);
+    }
+
+    .field.error input,
+    .field.error select {
+      border-color: var(--red);
+      background: var(--red-light);
+      box-shadow: 0 0 0 3px rgba(229,57,53,0.10);
+      -webkit-box-shadow: 0 0 0 3px rgba(229,57,53,0.10);
+    }
+
+    .error-msg {
+      display: none;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--red);
+      align-items: center;
+      gap: 4px;
+    }
+
+    .field.error .error-msg {
+      display: flex;
+    }
+
+    .error-msg::before {
+      content: '⚠';
+      font-size: 12px;
+    }
+
+    .field.valid input,
+    .field.valid select {
+      border-color: var(--green);
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 6px;
+    }
+
+    .btn-submit {
+      flex: 1;
+      padding: 14px;
+      background: var(--green);
+      color: white;
+      border: none;
+      border-radius: var(--radius);
+      font-family: 'Inter', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.12s;
+      letter-spacing: 0.2px;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .btn-back {
+      background: var(--gray-5);
+      color: var(--gray-2);
+    }
+
+    .btn-submit:active {
+      transform: scale(0.98);
+    }
+
+    .btn-submit:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .progress {
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+      margin-bottom: 20px;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--gray-5);
+      border: 1.5px solid var(--gray-4);
+      transition: background 0.2s, border-color 0.2s;
+    }
+
+    .dot.filled {
+      background: var(--green);
+      border-color: var(--green);
+    }
+
+    .success {
+      display: none;
+      text-align: center;
+      padding: 40px 20px;
+      animation: fadeUp 0.4s ease;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .success-icon {
+      font-size: 56px;
+      margin-bottom: 16px;
+    }
+
+    .success h2 {
+      font-size: 22px;
+      font-weight: 900;
+      color: var(--green);
+      margin-bottom: 8px;
+    }
+
+    .success p {
+      font-size: 14px;
+      color: var(--gray-3);
+      font-weight: 500;
+    }
+
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      20%      { transform: translateX(-6px); }
+      40%      { transform: translateX(6px); }
+      60%      { transform: translateX(-4px); }
+      80%      { transform: translateX(4px); }
+    }
+    .shake {
+      animation: shake 0.32s ease;
+    }
+
+    /* Step animations */
+    .step {
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+    .step.active {
+      display: block;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateX(10px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+  </style>
+</head>
+<body>
+
+<div class="wrapper">
+
+  <div class="header">
+    <div class="logo-ring">
+      <img src="logo.jpg" alt="logo">
+    </div>
+    <h1>Ro'yxatdan o'tish</h1>
+    <p>Formani to'liq va aniq to'ldiring</p>
+  </div>
+
+  <div class="progress" id="progress">
+    <div class="dot filled" id="d1"></div>
+    <div class="dot" id="d2"></div>
+    <div class="dot" id="d3"></div>
+    <div class="dot" id="d4"></div>
+    <div class="dot" id="d5"></div>
+  </div>
+
+  <div class="card" id="formCard">
+    <form id="form" novalidate>
+
+      <!-- Step 1: Ism Familiya -->
+      <div class="step active" data-step="0">
+        <div class="field" id="f-name">
+          <label for="name">Ism Familiya</label>
+          <div class="input-wrap">
+            <input
+              type="text"
+              id="name"
+              placeholder="Masalan: Abdulloh Rahimov"
+              autocomplete="off"
+              autocorrect="off"
+              autocapitalize="words"
+            >
+          </div>
+          <span class="error-msg" id="e-name">Ism va familiyani to'liq kiriting (kamida 2 so'z)</span>
+        </div>
+      </div>
+
+      <!-- Step 2: Telefon -->
+      <div class="step" data-step="1">
+        <div class="field" id="f-phone">
+          <label for="phone">Telefon raqam</label>
+          <div class="input-wrap">
+            <input
+              type="tel"
+              id="phone"
+              placeholder="+998 90 123 45 67"
+              maxlength="17"
+              autocomplete="tel"
+              inputmode="tel"
+            >
+          </div>
+          <span class="error-msg" id="e-phone">To'g'ri telefon raqam kiriting (+998XXXXXXXXX)</span>
+        </div>
+      </div>
+
+      <!-- Step 3: Sinf -->
+      <div class="step" data-step="2">
+        <div class="field" id="f-grade">
+          <label for="grade">Farzandingiz nechanchi sinfda o'qiydi?</label>
+          <div class="select-wrap">
+            <select id="grade" class="placeholder-active">
+              <option value="">Sinfni tanlang</option>
+              <option>1-sinf</option><option>2-sinf</option>
+              <option>3-sinf</option><option>4-sinf</option>
+              <option>5-sinf</option><option>6-sinf</option>
+              <option>7-sinf</option><option>8-sinf</option>
+              <option>9-sinf</option><option>10-sinf</option>
+              <option>11-sinf</option>
+            </select>
+          </div>
+          <span class="error-msg" id="e-grade">Sinfni tanlash shart</span>
+        </div>
+      </div>
+
+      <!-- Step 4: Hudud -->
+      <div class="step" data-step="3">
+        <div class="field" id="f-district">
+          <label for="district">Qayerda yashaysiz?</label>
+          <div class="select-wrap">
+            <select id="district" class="placeholder-active">
+              <option value="">Hududni tanlang</option>
+              <option>Shayxontohur tumani</option>
+              <option>Mirobod tumani</option>
+              <option>Mirzo Ulug'bek tumani</option>
+              <option>Sergeli tumani</option>
+              <option>Olmazor tumani</option>
+              <option>Uchtepa tumani</option>
+              <option>Bektemir tumani</option>
+              <option>Yashnobod tumani</option>
+              <option>Chilonzor tumani</option>
+              <option>Yunusobod tumani</option>
+              <option>Yakkasaroy tumani</option>
+              <option>Boshqa viloyat</option>
+            </select>
+          </div>
+          <span class="error-msg" id="e-district">Hududni tanlash shart</span>
+        </div>
+      </div>
+
+      <!-- Step 5: Manba -->
+      <div class="step" data-step="4">
+        <div class="field" id="f-source">
+          <label for="source">Biz haqimizda qayerdan bildingiz?</label>
+          <div class="select-wrap">
+            <select id="source" class="placeholder-active">
+              <option value="">Manbani tanlang</option>
+              <option>Telegram</option>
+              <option>Instagram</option>
+              <option>Do'st orqali</option>
+              <option>Boshqa</option>
+            </select>
+          </div>
+          <span class="error-msg" id="e-source">Manba tanlash shart</span>
+        </div>
+      </div>
+
+      <div class="btn-group">
+        <button type="button" class="btn-submit btn-back" id="backBtn" style="display: none;">Orqaga</button>
+        <button type="button" class="btn-submit" id="nextBtn">Keyingisi ➔</button>
+        <button class="btn-submit" type="submit" id="submitBtn" style="display: none;">
+          Yuborish 🚀
+        </button>
+      </div>
+
+    </form>
+  </div>
+
+  <div class="success" id="success">
+    <div class="success-icon">✅</div>
+    <h2>Muvaffaqiyatli!</h2>
+    <p>Ma'lumot muvaffaqiyatli yuborildi</p>
+  </div>
+
+</div>
+
+<script>
+  const tg = window.Telegram.WebApp;
+  tg.ready();
+  tg.expand();
+
+  const nameInput     = document.getElementById('name');
+  const phoneInput    = document.getElementById('phone');
+  const gradeSelect   = document.getElementById('grade');
+  const districtSel   = document.getElementById('district');
+  const sourceSel     = document.getElementById('source');
+  const form          = document.getElementById('form');
+  const submitBtn     = document.getElementById('submitBtn');
+  
+  const nextBtn       = document.getElementById('nextBtn');
+  const backBtn       = document.getElementById('backBtn');
+  const steps         = document.querySelectorAll('.step');
+  let currentStep     = 0;
+
+  const fields = [
+    { el: nameInput,   wrap: 'f-name',     err: 'e-name' },
+    { el: phoneInput,  wrap: 'f-phone',    err: 'e-phone' },
+    { el: gradeSelect, wrap: 'f-grade',    err: 'e-grade' },
+    { el: districtSel, wrap: 'f-district', err: 'e-district' },
+    { el: sourceSel,   wrap: 'f-source',   err: 'e-source' },
+  ];
+
+  /* Select placeholder rang boshqaruvi */
+  function updateSelectColor(sel) {
+    if (sel.value === '') {
+      sel.classList.add('placeholder-active');
+    } else {
+      sel.classList.remove('placeholder-active');
+    }
+  }
+
+  [gradeSelect, districtSel, sourceSel].forEach(sel => {
+    sel.addEventListener('change', () => updateSelectColor(sel));
+  });
+
+  /* Phone auto-format */
+  phoneInput.addEventListener('input', function () {
+    let v = this.value.replace(/\D/g, '');
+    if (v.startsWith('998')) v = '+' + v;
+    else if (v.startsWith('8')) v = '+99' + v;
+    else if (!v.startsWith('+')) v = v ? '+998' + v : '';
+
+    let digits = v.replace(/\D/g, '');
+    if (digits.length > 12) digits = digits.slice(0, 12);
+    let formatted = '';
+    if (digits.length > 0)  formatted = '+' + digits.slice(0, 3);
+    if (digits.length > 3)  formatted += ' ' + digits.slice(3, 5);
+    if (digits.length > 5)  formatted += ' ' + digits.slice(5, 8);
+    if (digits.length > 8)  formatted += ' ' + digits.slice(8, 10);
+    if (digits.length > 10) formatted += ' ' + digits.slice(10, 12);
+    this.value = formatted;
+
+    validateField(1, false);
+  });
+
+  /* Name: faqat harflar */
+  nameInput.addEventListener('keydown', function (e) {
+    if (e.key >= '0' && e.key <= '9') e.preventDefault();
+  });
+  nameInput.addEventListener('input', function () {
+    this.value = this.value.replace(/[0-9]/g, '');
+    validateField(0, false);
+  });
+
+  gradeSelect.addEventListener('change',  () => { validateField(2, false); });
+  districtSel.addEventListener('change',  () => { validateField(3, false); });
+  sourceSel.addEventListener('change',    () => { validateField(4, false); });
+
+  /* Validators */
+  function isValidName(v) {
+    const parts = v.trim().split(/\s+/);
+    return parts.length >= 2 && parts.every(p => p.length >= 2) && /^[a-zA-ZА-Яа-яёЁҒғҚқҲҳЎўʻ'\-\s]+$/u.test(v);
+  }
+
+  function isValidPhone(v) {
+    const digits = v.replace(/\D/g, '');
+    return digits.length === 12 && digits.startsWith('998');
+  }
+
+  function validateField(i, showError = true) {
+    const { el, wrap } = fields[i];
+    const val = el.value.trim();
+    let ok = false;
+
+    if (i === 0) ok = isValidName(val);
+    else if (i === 1) ok = isValidPhone(val);
+    else ok = val !== '';
+
+    const wrapEl = document.getElementById(wrap);
+    wrapEl.classList.toggle('error', showError && !ok);
+    wrapEl.classList.toggle('valid', ok);
+    return ok;
+  }
+
+  /* Progress Update */
+  function updateProgress() {
+    document.querySelectorAll('.dot').forEach((dot, i) => {
+      dot.classList.toggle('filled', i <= currentStep);
+    });
+  }
+
+  function showStep(stepIndex) {
+    steps.forEach((step, i) => {
+      step.classList.toggle('active', i === stepIndex);
+    });
+
+    backBtn.style.display = stepIndex > 0 ? 'block' : 'none';
+    if (stepIndex === steps.length - 1) {
+      nextBtn.style.display = 'none';
+      submitBtn.style.display = 'block';
+    } else {
+      nextBtn.style.display = 'block';
+      submitBtn.style.display = 'none';
+    }
+    
+    updateProgress();
+  }
+
+  function shakeElement(el) {
+    el.classList.remove('shake');
+    void el.offsetWidth;
+    el.classList.add('shake');
+    el.addEventListener('animationend', () => el.classList.remove('shake'), { once: true });
+  }
+
+  /* Step Navigation */
+  nextBtn.addEventListener('click', () => {
+    if (validateField(currentStep, true)) {
+      currentStep++;
+      showStep(currentStep);
+    } else {
+      const errField = steps[currentStep].querySelector('.field');
+      shakeElement(errField);
+    }
+  });
+
+  backBtn.addEventListener('click', () => {
+    if (currentStep > 0) {
+      currentStep--;
+      showStep(currentStep);
+    }
+  });
+
+  /* Allow enter key to go to next step */
+  form.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (currentStep < steps.length - 1) {
+        nextBtn.click();
+      } else {
+        submitBtn.click();
+      }
+    }
+  });
+
+  /* Submit */
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+
+    if (!validateField(currentStep, true)) {
+      const errField = steps[currentStep].querySelector('.field');
+      shakeElement(errField);
+      return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.innerText = 'Yuborilmoqda...';
+
+    const user_id = tg.initDataUnsafe && tg.initDataUnsafe.user ? tg.initDataUnsafe.user.id : null;
+    const data = {
+      user_id,
+      name:     nameInput.value.trim(),
+      phone:    phoneInput.value.trim(),
+      grade:    gradeSelect.value,
+      district: districtSel.value,
+      source:   sourceSel.value,
+    };
+
+    fetch('https://botttttttt-production.up.railway.app/api/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    })
+      .then(function(r) { return r.json(); })
+      .then(function(result) {
+        if (result.ok) {
+          document.getElementById('formCard').style.display = 'none';
+          document.getElementById('progress').style.display = 'none';
+          document.getElementById('success').style.display = 'block';
+          setTimeout(function() { tg.close(); }, 1800);
+        } else {
+          alert('Xatolik yuz berdi. Iltimos qayta urinib ko\'ring.');
+          submitBtn.disabled = false;
+          submitBtn.innerText = 'Yuborish 🚀';
+        }
+      })
+      .catch(function(err) {
+        alert('Server bilan ulanishda xatolik yuz berdi: ' + err.message);
+        submitBtn.disabled = false;
+        submitBtn.innerText = 'Yuborish 🚀';
+      });
+  });
+</script>
+</body>
+</html>

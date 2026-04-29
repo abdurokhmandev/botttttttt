@@ -17,7 +17,7 @@ def _load_video(key: str) -> dict:
     try:
         return json.loads(raw)
     except json.JSONDecodeError:
-        return {"title": key, "url": "", "photo": ""}
+        return {"title": key, "url": "", "photo": "", "video": ""}
 
 
 # ── Core ─────────────────────────────────────────────────────────────────────
