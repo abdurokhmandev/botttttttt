@@ -51,19 +51,33 @@ async def handle_video_callback(callback: types.CallbackQuery) -> None:
     else:
         abs_path = ""
 
-    # ── Send actual video file if it exists ────────────────────────────────────
-    if abs_path and os.path.exists(abs_path):
-        try:
-            with open(abs_path, "rb") as vf:
+    # ── Handle video sending ───────────────────────────────────────────────────
+    if video_path:
+        # 1-usul: Lokal fayl bo'lsa (serverda)
+        if abs_path and os.path.exists(abs_path):
+            try:
+                with open(abs_path, "rb") as vf:
+                    await callback.message.answer_video(
+                        video=vf,
+                        caption=caption,
+                        parse_mode="HTML",
+                        reply_markup=markup,
+                    )
+                return
+            except Exception:
+                logger.exception("❌ Failed to send local video for index %s, falling back", index)
+        # 2-usul: Agar file_id berilgan bo'lsa
+        else:
+            try:
                 await callback.message.answer_video(
-                    video=vf,
+                    video=video_path,
                     caption=caption,
                     parse_mode="HTML",
                     reply_markup=markup,
                 )
-            return
-        except Exception:
-            logger.exception("❌ Failed to send local video for index %s, falling back", index)
+                return
+            except Exception:
+                logger.exception("❌ Failed to send video using file_id for index %s, falling back", index)
 
     # ── Fallback: text message with inline buttons ─────────────────────────────
     await callback.message.answer(
@@ -72,9 +86,24 @@ async def handle_video_callback(callback: types.CallbackQuery) -> None:
         reply_markup=markup,
     )
 
+async def get_video_file_id(message: types.Message) -> None:
+    """Yangi videoni file_id orqali olish."""
+    file_id = message.video.file_id
+    await message.reply(
+        f"✅ Bu videoning maxsus kodi (file_id):\n\n`{file_id}`\n\n"
+        f"Uni shunchaki nusxalab oling va `.env` faylga xuddi shu tarzda joylang:\n"
+        f'`VIDEO_1={{"video": "{file_id}", "title": "Dars nomi", "url": "..."}}`',
+        parse_mode="Markdown"
+    )
+
 
 def register_video_handlers(dp: Dispatcher) -> None:
     dp.register_callback_query_handler(
         handle_video_callback,
         lambda c: c.data and c.data.startswith("video_"),
+    )
+    # Register the utility handler for videos
+    dp.register_message_handler(
+        get_video_file_id,
+        content_types=types.ContentType.VIDEO
     )
