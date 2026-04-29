@@ -1,0 +1,1 @@
+$videos = @("video1.mp4", "video2.mp4", "video3.mp4", "video4.mp4", "video5.mp4"); foreach ($v in $videos) { Write-Host "Adding $v..."; git add "static/videos/$v"; git commit -m "Add $v"; Write-Host "Pushing $v..."; git push; if ($LASTEXITCODE -ne 0) { Write-Host "Failed to push $v"; exit $LASTEXITCODE } }
