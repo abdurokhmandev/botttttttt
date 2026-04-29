@@ -60,22 +60,28 @@ async def handle_video_callback(callback: types.CallbackQuery) -> None:
 
     # 2. Try Local File
     abs_path = photo_path if os.path.isabs(photo_path) else os.path.join(BASE_DIR, photo_path)
-    logger.info("🔍 Checking photo path: %s", abs_path)
+    
     if os.path.exists(abs_path) and os.path.isfile(abs_path):
         try:
-            with open(abs_path, "rb") as pf:
-                await callback.message.answer_photo(photo=pf, caption=caption, parse_mode="HTML", reply_markup=markup)
+            from aiogram.types import InputFile
+            await callback.message.answer_photo(
+                photo=InputFile(abs_path),
+                caption=caption,
+                parse_mode="HTML",
+                reply_markup=markup
+            )
             return
-        except Exception:
-            logger.exception("❌ Failed to send local photo for index %s at %s", index, abs_path)
+        except Exception as e:
+            logger.error("❌ Error sending photo file %s: %s", abs_path, e)
+    else:
+        logger.warning("⚠️ Photo file NOT FOUND at: %s", abs_path)
 
     # 3. Try as file_id (as last resort)
-    logger.info("🔍 Attempting to send as file_id: %s", photo_path)
     try:
         await callback.message.answer_photo(photo=photo_path, caption=caption, parse_mode="HTML", reply_markup=markup)
         return
     except Exception:
-        logger.warning("❌ Failed to send photo as file_id for index %s", index)
+        pass
 
     # ── Fallback: text message ─────────────────────────────────────────────────
     await callback.message.answer(
