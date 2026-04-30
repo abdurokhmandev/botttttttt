@@ -48,11 +48,11 @@ async def cmd_start(message: types.Message) -> None:
     state_store.set_state(user_id, state_store.STARTED)
 
     caption = (
-        f"👋 Xush kelibsiz, {first_name}!\n\n"
+        f"👋 Assalomu alaykum, {first_name}!\n\n"
         "Rahimov School ga xush kelibsiz.\n\n"
-        "Bepul dars videolariga kirish uchun qisqacha ro'yxatdan o'ting. "
-        "Bu atigi 30 soniya oladi! 🚀\n\n"
-        "Pastdagi tugmani bosing 👇"
+        """Bepul dars videolariga kirish uchun qisqacha ro'yxatdan o'ting.
+        Bu atigi 30 soniya oladi! 🚀
+        """
     )
 
     from config import BASE_DIR
