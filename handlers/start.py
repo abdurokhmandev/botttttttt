@@ -14,6 +14,9 @@ from storage import state_store
 
 logger = logging.getLogger(__name__)
 
+# Cache for welcome photo file_id
+WELCOME_PHOTO_CACHE: dict[str, str] = {}
+
 
 # ── FSM States for chat-based registration ────────────────────────────────────
 class RegForm(StatesGroup):
@@ -59,7 +62,21 @@ async def cmd_start(message: types.Message) -> None:
 
     cover_path = os.path.join(BASE_DIR, "static", "cover.png")
     sent_msg = None
-    if os.path.exists(cover_path) and os.path.isfile(cover_path):
+
+    # Try Cache first
+    cached_id = WELCOME_PHOTO_CACHE.get(cover_path)
+    if cached_id:
+        try:
+            sent_msg = await message.answer_photo(
+                photo=cached_id,
+                caption=caption,
+                parse_mode="HTML",
+                reply_markup=_build_start_keyboard(),
+            )
+        except Exception:
+            WELCOME_PHOTO_CACHE.pop(cover_path, None)
+
+    if not sent_msg and os.path.exists(cover_path) and os.path.isfile(cover_path):
         try:
             sent_msg = await message.answer_photo(
                 photo=InputFile(cover_path),
@@ -67,6 +84,8 @@ async def cmd_start(message: types.Message) -> None:
                 parse_mode="HTML",
                 reply_markup=_build_start_keyboard(),
             )
+            if sent_msg.photo:
+                WELCOME_PHOTO_CACHE[cover_path] = sent_msg.photo[-1].file_id
         except Exception as e:
             logger.error("❌ Failed to send welcome photo: %s", e)
 

@@ -8,6 +8,10 @@ from config import VIDEOS, BASE_DIR
 
 logger = logging.getLogger(__name__)
 
+# In-memory cache for file_ids to speed up delivery
+# { 'photo_path': 'file_id' }
+FILE_ID_CACHE: dict[str, str] = {}
+
 
 def _build_markup(url: str) -> InlineKeyboardMarkup:
     """Two inline buttons: YouTube link + school info."""
@@ -50,16 +54,32 @@ async def handle_video_callback(callback: types.CallbackQuery) -> None:
         await callback.message.answer(caption, parse_mode="HTML", reply_markup=markup)
         return
 
+    # 0. Try Cache (Speed Hack)
+    cached_file_id = FILE_ID_CACHE.get(photo_path)
+    if cached_file_id:
+        try:
+            await callback.message.answer_photo(
+                photo=cached_file_id,
+                caption=caption,
+                parse_mode="HTML",
+                reply_markup=markup
+            )
+            return
+        except Exception:
+            logger.warning("Cached file_id expired or invalid for %s", photo_path)
+            FILE_ID_CACHE.pop(photo_path, None)
+
     # 1. Try URL
     if photo_path.startswith(("http://", "https://")):
         try:
-            await callback.message.answer_photo(photo=photo_path, caption=caption, parse_mode="HTML", reply_markup=markup)
+            msg = await callback.message.answer_photo(photo=photo_path, caption=caption, parse_mode="HTML", reply_markup=markup)
+            if msg.photo:
+                FILE_ID_CACHE[photo_path] = msg.photo[-1].file_id
             return
         except Exception as e:
             logger.error("❌ Failed to send photo URL for index %s: %s", index, e)
 
     # 2. Try Local File
-    # If it's already an absolute path, use it. Otherwise, make it relative to BASE_DIR
     if os.path.isabs(photo_path):
         abs_path = photo_path
     else:
@@ -68,12 +88,14 @@ async def handle_video_callback(callback: types.CallbackQuery) -> None:
     if os.path.exists(abs_path) and os.path.isfile(abs_path):
         try:
             from aiogram.types import InputFile
-            await callback.message.answer_photo(
+            msg = await callback.message.answer_photo(
                 photo=InputFile(abs_path),
                 caption=caption,
                 parse_mode="HTML",
                 reply_markup=markup
             )
+            if msg.photo:
+                FILE_ID_CACHE[photo_path] = msg.photo[-1].file_id
             return
         except Exception as e:
             logger.error("❌ Error sending photo file %s: %s", abs_path, e)
@@ -82,7 +104,9 @@ async def handle_video_callback(callback: types.CallbackQuery) -> None:
 
     # 3. Try as file_id (as last resort)
     try:
-        await callback.message.answer_photo(photo=photo_path, caption=caption, parse_mode="HTML", reply_markup=markup)
+        msg = await callback.message.answer_photo(photo=photo_path, caption=caption, parse_mode="HTML", reply_markup=markup)
+        if msg.photo:
+            FILE_ID_CACHE[photo_path] = msg.photo[-1].file_id
         return
     except Exception:
         pass
