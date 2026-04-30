@@ -38,7 +38,7 @@ async def handle_video_callback(callback: types.CallbackQuery) -> None:
 
     # ── Build caption ──────────────────────────────────────────────────────────
     caption = (
-        f"🖼️ <b>{title}</b>\n"
+        f"<b>{title}</b>\n"
         "——————————————————————\n"
         "Rahimov School haqida ko'proq ma'lumot olishni xohlaysizmi?"
     )
