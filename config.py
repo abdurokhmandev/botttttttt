@@ -29,27 +29,27 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 VIDEOS: dict[int, dict] = {
     1: {
         "photo": os.path.join(BASE_DIR, "static", "aka.png"),
-        "title": "Aka-uka va opa-singillar o'rtasidagi muammo | Rahimov Suhbatlari",
+        "title": "Aka-uka va opa-singillar o'rtasidagi muammo 📹",
         "url": "https://youtu.be/ApLGhoQCuMw?si=zIYyOYpBaogyYJQo"
     },
     2: {
         "photo": os.path.join(BASE_DIR, "static", "otalar.png"),
-        "title": "Ota va o'g'il munosabati haqida gaplashamiz | Rahimov Suhbatlari",
+        "title": "Ota va o'g'il munosabati haqida gaplashamiz 📹",
         "url": "https://youtu.be/JzofE9oMaV8?si=iTHzQwIyIMVh4vNK"
     },
     3: {
         "photo": os.path.join(BASE_DIR, "static", "band.png"),
-        "title": "Tarbiya uchun vaqt yo'q ! | Rahimov Suhbatlari",
+        "title": "Tarbiya uchun vaqt yo'q  📹",
         "url": "https://youtu.be/xbfkK7xV7SI?si=LaMetMjOgkfVtJDz"
     },
     4: {
         "photo": os.path.join(BASE_DIR, "static", "kasb.png"),
-        "title": "Farzandim bloger bo'lmoqchi | Rahimov Suhbatlari",
-        "url": "https://youtu.be/ApLGhoQCuMw?si=byFbFMI-EOu-_ToU"
+        "title": "Farzandim bloger bo'lmoqchi  📹",
+        "url": "https://youtu.be/PxOoZDJTpZM?si=UDa6H2vVTZlujkm4"
     },
     5: {
         "photo": os.path.join(BASE_DIR, "static", "farzandim.png"),
-        "title": "Bola bilan do'stlashing ! | Rahimov Suhbatlari",
+        "title": "Bola bilan do'stlashing  📹",
         "url": "https://youtu.be/8-6Wcy9DE_c?si=3qqCa4v2fjF0F_k8"
     },
 }
