@@ -41,8 +41,25 @@ _load()
 
 def set_state(user_id: int, state: str) -> None:
     with _lock:
-        _store[user_id] = {"state": state, "ts": time.time()}
+        if user_id not in _store:
+            _store[user_id] = {}
+        _store[user_id]["state"] = state
+        _store[user_id]["ts"] = time.time()
         _save()
+
+
+def set_metadata(user_id: int, key: str, value: any) -> None:
+    with _lock:
+        if user_id not in _store:
+            _store[user_id] = {"state": None, "ts": time.time()}
+        _store[user_id][key] = value
+        _save()
+
+
+def get_metadata(user_id: int, key: str) -> any:
+    with _lock:
+        entry = _store.get(user_id)
+        return entry.get(key) if entry else None
 
 
 def get_state(user_id: int) -> Optional[str]:

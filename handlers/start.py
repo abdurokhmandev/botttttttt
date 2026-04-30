@@ -50,31 +50,35 @@ async def cmd_start(message: types.Message) -> None:
     caption = (
         f"👋 Assalomu alaykum, {first_name}!\n\n"
         "Rahimov School' xususiy maktabining foydali botiga xush kelibsiz 🎉\n\n"
-        """Farzand tarbiyasiga doir foydali suhbat va darslarni ushbu botimizdan bepulga olasiz 🔥\n📝 Quyidagi tugma orqali ro'yxatdan o'tib, bepul darslarni tinglashingiz mumkin:
-        """
+        "Farzand tarbiyasiga doir foydali suhbat va darslarni ushbu botimizdan bepulga olasiz 🔥\n"
+        "📝 Quyidagi tugma orqali ro'yxatdan o'tib, bepul darslarni tinglashingiz mumkin:"
     )
 
     from config import BASE_DIR
     from aiogram.types import InputFile
 
     cover_path = os.path.join(BASE_DIR, "static", "cover.png")
+    sent_msg = None
     if os.path.exists(cover_path) and os.path.isfile(cover_path):
         try:
-            await message.answer_photo(
+            sent_msg = await message.answer_photo(
                 photo=InputFile(cover_path),
                 caption=caption,
                 parse_mode="HTML",
                 reply_markup=_build_start_keyboard(),
             )
-            return
         except Exception as e:
             logger.error("❌ Failed to send welcome photo: %s", e)
 
-    await message.answer(
-        text=caption,
-        parse_mode="HTML",
-        reply_markup=_build_start_keyboard(),
-    )
+    if not sent_msg:
+        sent_msg = await message.answer(
+            text=caption,
+            parse_mode="HTML",
+            reply_markup=_build_start_keyboard(),
+        )
+
+    # Store the message ID for later deletion after registration
+    state_store.set_metadata(user_id, "reg_message_id", sent_msg.message_id)
 
 
 # ── Chat-based registration flow ─────────────────────────────────────────────
@@ -134,6 +138,14 @@ async def reg_get_district(message: types.Message, state: FSMContext) -> None:
         ),
         reply_markup=_build_video_menu(),
     )
+    
+    # Ro'yxatdan o'tish taklifnomasi xabarini o'chirish
+    reg_msg_id = state_store.get_metadata(user_id, "reg_message_id")
+    if reg_msg_id:
+        try:
+            await message.bot.delete_message(message.chat.id, reg_msg_id)
+        except Exception:
+            pass
 
 
 def register_start_handler(dp: Dispatcher) -> None:

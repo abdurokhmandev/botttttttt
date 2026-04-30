@@ -64,7 +64,13 @@ async def handle_web_app_data(message: types.Message) -> None:
 
     # Ro'yxatdan o'tish taklifnomasi xabarini o'chirish
     try:
-        await message.bot.delete_message(message.chat.id, message.message_id)
+        # 1. Foydalanuvchi yuborgan ma'lumot xabarini o'chiramiz
+        await message.delete()
+        
+        # 2. Bot yuborgan taklifnoma xabarini o'chiramiz
+        reg_msg_id = state_store.get_metadata(user_id, "reg_message_id")
+        if reg_msg_id:
+            await message.bot.delete_message(message.chat.id, reg_msg_id)
     except Exception:
         pass
 
@@ -104,10 +110,10 @@ async def webapp_api_handler(request: web.Request, bot: Bot) -> web.Response:
         return web.json_response({"ok": False, "error": "Failed to send message"}, status=500)
 
     # Ro'yxatdan o'tish taklifnomasi xabarini o'chirish
-    message_id = data.get("message_id")
-    if message_id:
+    reg_msg_id = data.get("message_id") or state_store.get_metadata(user_id, "reg_message_id")
+    if reg_msg_id:
         try:
-            await bot.delete_message(chat_id=user_id, message_id=message_id)
+            await bot.delete_message(chat_id=user_id, message_id=reg_msg_id)
         except Exception:
             pass
 
