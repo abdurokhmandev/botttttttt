@@ -49,9 +49,9 @@ async def cmd_start(message: types.Message) -> None:
 
     caption = (
         f"👋 Assalomu alaykum, {first_name}!\n\n"
-        "Rahimov School ga xush kelibsiz.\n\n"
-        """Bepul dars videolariga kirish uchun qisqacha ro'yxatdan o'ting.
-        Bu atigi 30 soniya oladi! 🚀
+        "Rahimov School' xususiy maktabining foydali botiga xush kelibsiz 🎉\n\n"
+        """Farzand tarbiyasiga doir foydali suhbat va darslarni ushbu botimizdan bepulga olasiz 🔥\n
+        📝 Quyidagi tugma orqali ro'yxatdan o'tib, bepul darslarni tinglashingiz mumkin:
         """
     )
 

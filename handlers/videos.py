@@ -13,7 +13,7 @@ def _build_markup(url: str) -> InlineKeyboardMarkup:
     """Two inline buttons: YouTube link + school info."""
     rows = []
     if url:
-        rows.append([InlineKeyboardButton(text="▶️ Youtube'da ko'ring", url=url)])
+        rows.append([InlineKeyboardButton(text="📹 Videoni ko'rish", url=url)])
     rows.append([InlineKeyboardButton(text="🏫 Rahimov School", callback_data="school_info")])
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
@@ -39,7 +39,7 @@ async def handle_video_callback(callback: types.CallbackQuery) -> None:
     # ── Build caption ──────────────────────────────────────────────────────────
     caption = (
         f"<b>{title}</b>\n"
-        "——————————————————————\n"
+        "————————————\n"
         "Rahimov School haqida ko'proq ma'lumot olishni xohlaysizmi?"
     )
 
