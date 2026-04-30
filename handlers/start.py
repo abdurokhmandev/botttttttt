@@ -1,3 +1,5 @@
+import logging
+import os
 from aiogram import Dispatcher, types
 from aiogram.types import (
     ReplyKeyboardMarkup, KeyboardButton, WebAppInfo,
@@ -9,6 +11,8 @@ from aiogram.dispatcher.filters.state import State, StatesGroup
 
 from config import WEBAPP_URL
 from storage import state_store
+
+logger = logging.getLogger(__name__)
 
 
 # ── FSM States for chat-based registration ────────────────────────────────────
@@ -51,21 +55,27 @@ async def cmd_start(message: types.Message) -> None:
         "Pastdagi tugmani bosing 👇"
     )
 
-    cover_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "static", "cover.png")
-    if os.path.exists(cover_path):
-        with open(cover_path, "rb") as photo:
+    from config import BASE_DIR
+    from aiogram.types import InputFile
+
+    cover_path = os.path.join(BASE_DIR, "static", "cover.png")
+    if os.path.exists(cover_path) and os.path.isfile(cover_path):
+        try:
             await message.answer_photo(
-                photo=photo,
+                photo=InputFile(cover_path),
                 caption=caption,
-                parse_mode="Markdown",
+                parse_mode="HTML",
                 reply_markup=_build_start_keyboard(),
             )
-    else:
-        await message.answer(
-            text=caption,
-            parse_mode="Markdown",
-            reply_markup=_build_start_keyboard(),
-        )
+            return
+        except Exception as e:
+            logger.error("❌ Failed to send welcome photo: %s", e)
+
+    await message.answer(
+        text=caption,
+        parse_mode="HTML",
+        reply_markup=_build_start_keyboard(),
+    )
 
 
 # ── Chat-based registration flow ─────────────────────────────────────────────

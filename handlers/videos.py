@@ -55,24 +55,25 @@ async def handle_video_callback(callback: types.CallbackQuery) -> None:
         try:
             await callback.message.answer_photo(photo=photo_path, caption=caption, parse_mode="HTML", reply_markup=markup)
             return
-        except Exception:
-            logger.exception("❌ Failed to send photo URL for index %s", index)
+        except Exception as e:
+            logger.error("❌ Failed to send photo URL for index %s: %s", index, e)
 
     # 2. Try Local File
-    # Calculate path relative to this file's directory (handlers/) -> parent -> static
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    root_dir = os.path.dirname(current_dir)
-    abs_path = os.path.join(root_dir, photo_path)
+    # If it's already an absolute path, use it. Otherwise, make it relative to BASE_DIR
+    if os.path.isabs(photo_path):
+        abs_path = photo_path
+    else:
+        abs_path = os.path.join(BASE_DIR, photo_path)
     
     if os.path.exists(abs_path) and os.path.isfile(abs_path):
         try:
-            with open(abs_path, "rb") as photo:
-                await callback.message.answer_photo(
-                    photo=photo,
-                    caption=caption,
-                    parse_mode="HTML",
-                    reply_markup=markup
-                )
+            from aiogram.types import InputFile
+            await callback.message.answer_photo(
+                photo=InputFile(abs_path),
+                caption=caption,
+                parse_mode="HTML",
+                reply_markup=markup
+            )
             return
         except Exception as e:
             logger.error("❌ Error sending photo file %s: %s", abs_path, e)
