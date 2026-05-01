@@ -58,4 +58,4 @@ VIDEOS: dict[int, dict] = {
 }
 
 CREDENTIALS_PATH = os.path.join(BASE_DIR, "credentials.json")
-STATE_FILE_PATH = os.path.join(BASE_DIR, "state.json")
+STATE_FILE_PATH = os.path.join(BASE_DIR, "data", "state.json")

@@ -29,6 +29,8 @@ def _load() -> None:
 
 def _save() -> None:
     """Persist current state to disk (call while holding _lock)."""
+    import os
+    os.makedirs(os.path.dirname(STATE_FILE_PATH), exist_ok=True)
     with open(STATE_FILE_PATH, "w", encoding="utf-8") as f:
         json.dump(_store, f, ensure_ascii=False, indent=2)
 
