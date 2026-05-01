@@ -186,6 +186,7 @@ async def execute_broadcast(callback: types.CallbackQuery, state: FSMContext):
     count = 0
     failed = 0
     
+    error_msg = ""
     for user_id, info in all_users.items():
         # Filter logic
         if target == "unregistered" and info.get("state") == state_store.REGISTERED:
@@ -199,17 +200,23 @@ async def execute_broadcast(callback: types.CallbackQuery, state: FSMContext):
                 reply_markup=markup
             )
             count += 1
-            # Rate limiting (optional but safe)
             if count % 20 == 0:
                 await asyncio.sleep(0.5)
         except Exception as e:
             logger.error("Failed to send broadcast to %s: %s", user_id, e)
             failed += 1
+            error_msg = str(e) # Capture last error
 
-    await callback.message.answer(
+    final_text = (
         f"✅ <b>Xabar yuborildi!</b>\n\n"
         f"👤 Qabul qildi: {count}\n"
-        f"❌ Xatolik: {failed}",
+        f"❌ Xatolik: {failed}"
+    )
+    if failed > 0:
+        final_text += f"\n\n⚠️ Oxirgi xatolik: <code>{error_msg}</code>"
+
+    await callback.message.answer(
+        final_text,
         parse_mode="HTML",
         reply_markup=_admin_main_keyboard()
     )
