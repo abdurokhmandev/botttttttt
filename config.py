@@ -15,6 +15,9 @@ def _require(key: str) -> str:
 BOT_TOKEN: str = _require("BOT_TOKEN")
 SHEETS_ID: str = _require("SHEETS_ID")
 WEBAPP_URL: str = _require("WEBAPP_URL")
+ADMIN_IDS: list[int] = [
+    int(i.strip()) for i in os.getenv("ADMIN_IDS", "").split(",") if i.strip()
+]
 
 # ── School ───────────────────────────────────────────────────────────────────
 SCHOOL_INFO: str = os.getenv(
