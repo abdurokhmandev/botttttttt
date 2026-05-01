@@ -70,3 +70,20 @@ def append_row(data: dict) -> None:
         logger.info("✅ Row appended for user %s", data.get("telegram_id"))
     except Exception:
         logger.exception("❌ Failed to append row to Google Sheets")
+
+
+def get_all_registered_ids() -> list[int]:
+    """Fetch all Telegram IDs from the Google Sheet."""
+    try:
+        sheet = _get_sheet()
+        # Telegram ID is in column 7 (HEADERS index 6)
+        records = sheet.get_all_records()
+        ids = []
+        for row in records:
+            tid = row.get("Telegram ID")
+            if tid and str(tid).isdigit():
+                ids.append(int(tid))
+        return list(set(ids)) # Unique IDs
+    except Exception:
+        logger.exception("❌ Failed to fetch IDs from Google Sheets")
+        return []

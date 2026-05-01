@@ -7,6 +7,7 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeybo
 
 from config import ADMIN_IDS
 from storage import state_store
+from services import sheets
 
 logger = logging.getLogger(__name__)
 
@@ -49,11 +50,24 @@ async def cmd_admin(message: types.Message):
         reply_markup=_admin_main_keyboard()
     )
 
+async def _get_combined_users():
+    """Merge local state with Google Sheets data."""
+    users = state_store.get_all()
+    registered_ids = sheets.get_all_registered_ids()
+    
+    for tid in registered_ids:
+        if tid not in users:
+            users[tid] = {"state": state_store.REGISTERED}
+        else:
+            users[tid]["state"] = state_store.REGISTERED
+    return users
+
 async def show_stats(message: types.Message):
     if message.from_user.id not in ADMIN_IDS:
         return
 
-    all_users = state_store.get_all()
+    await message.answer("⌛ Statistika hisoblanmoqda (Google Sheets bilan sinxronizatsiya)...")
+    all_users = await _get_combined_users()
     total = len(all_users)
     registered = sum(1 for u in all_users.values() if u.get("state") == state_store.REGISTERED)
     
@@ -157,9 +171,9 @@ async def execute_broadcast(callback: types.CallbackQuery, state: FSMContext):
     data = await state.get_data()
     await state.finish()
     
-    await callback.message.edit_text("🚀 Yuborish boshlandi...")
+    await callback.message.edit_text("🚀 Yuborish boshlandi (Google Sheets malumotlari qo'shilmoqda)...")
     
-    all_users = state_store.get_all()
+    all_users = await _get_combined_users()
     target = data["target"]
     
     # Prepare markup
