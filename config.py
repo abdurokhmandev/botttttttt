@@ -32,31 +32,31 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 VIDEOS: dict[int, dict] = {
     1: {
         "photo": os.path.join(BASE_DIR, "static", "aka.png"),
-        "video": "BAACAgIAAxkBAAM0afbvXbUwCMxw_9glyLZPM3aQLHkAAsqbAAI9LpFKWFK6Kn-RFP87BA",
+        "video": "BAACAgIAAxkBAAIEmWn29MByaMNGMcBlULUCMihHQw2DAALtmAACStW5S4Chfrwer8UEOwQ",
         "title": "Aka-uka va opa-singillar o'rtasidagi muammo 📹",
         "url": "https://youtu.be/ApLGhoQCuMw?si=zIYyOYpBaogyYJQo"
     },
     2: {
         "photo": os.path.join(BASE_DIR, "static", "otalar.png"),
-        "video": "BAACAgIAAxkBAAMwafbvLzZX9o2v-VdS6JOLWuxQNUkAAp6aAAIj-rhLa14XzZSjCgY7BA",
+        "video": "BAACAgIAAxkBAAIEl2n29KeG0OJhQdp0kyU4ieh2w5H2AALsmAACStW5Sxo1AcpE5r-rOwQ",
         "title": "Ota va o'g'il munosabati haqida gaplashamiz 📹",
         "url": "https://youtu.be/JzofE9oMaV8?si=iTHzQwIyIMVh4vNK"
     },
     3: {
         "photo": os.path.join(BASE_DIR, "static", "band.png"),
-        "video": "BAACAgIAAxkBAAM2afbvrDyrjxzGPS9V1g1FKQlDrtAAAtOpAALZ8MBKuGqLykhWQQw7BA",
+        "video": "BAACAgIAAxkBAAIElWn29Ikaok2n4kEbcWySsKWdeuxXAALrmAACStW5S8AbzbUqWbvPOwQ",
         "title": "Tarbiya uchun vaqt yo'q  📹",
         "url": "https://youtu.be/xbfkK7xV7SI?si=LaMetMjOgkfVtJDz"
     },
     4: {
         "photo": os.path.join(BASE_DIR, "static", "kasb.png"),
-        "video": "BAACAgIAAxkBAAMxafbvL-VC66I1H_LjobnGk7XpvdkAAhydAAK91ZBLI4TSBNLVUQ07BA",
+        "video": "BAACAgIAAxkBAAIEkWn29GbHUYBydVLL-oJkwE6ztOL_AALpmAACStW5SxcJ2liJ00FAOwQ",
         "title": "Farzandim bloger bo'lmoqchi  📹",
         "url": "https://youtu.be/PxOoZDJTpZM?si=UDa6H2vVTZlujkm4"
     },
     5: {
         "photo": os.path.join(BASE_DIR, "static", "farzandim.png"),
-        "video": "BAACAgIAAxkBAAM4afbwBpE3NZzykdlm4gGOuaGtIQ8AAquaAAKj77lLTz1OKlQ0eUw7BA",
+        "video": "BAACAgIAAxkBAAIEm2n29t-u5Zhwrsld0YxbEXRMt0dfAAIImQACStW5S3y1ESRFnvjROwQ",
         "title": "Bola bilan do'stlashing  📹",
         "url": "https://youtu.be/8-6Wcy9DE_c?si=3qqCa4v2fjF0F_k8"
     },

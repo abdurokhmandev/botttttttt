@@ -48,5 +48,9 @@ async def check_reminders(bot: Bot) -> None:
             )
             state_store.set_state(user_id, state_store.REMINDER_SENT)
             logger.info("⏰ Reminder sent to user %s", user_id)
-        except Exception:
-            logger.exception("❌ Failed to send reminder to user %s", user_id)
+        except Exception as e:
+            from aiogram.utils import exceptions
+            if isinstance(e, (exceptions.BotBlocked, exceptions.UserDeactivated)):
+                logger.warning("🚫 User %s has blocked the bot or account deleted. Skipping reminder.", user_id)
+            else:
+                logger.error("❌ Failed to send reminder to user %s: %s", user_id, e)
