@@ -130,7 +130,7 @@ async def reg_get_grade(message: types.Message, state: FSMContext) -> None:
 
 async def reg_get_district(message: types.Message, state: FSMContext) -> None:
     from services import sheets
-    from handlers.webapp import _build_video_menu, _video_list_text
+    from handlers.webapp import _build_video_menu, _video_list_text, _build_main_reply_keyboard
 
     async with state.proxy() as data:
         data["district"] = message.text.strip()

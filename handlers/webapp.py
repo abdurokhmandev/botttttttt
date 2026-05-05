@@ -2,7 +2,7 @@ import json
 import logging
 
 from aiogram import Dispatcher, types, Bot
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardRemove
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardRemove, ReplyKeyboardMarkup, KeyboardButton
 from aiohttp import web
 
 from config import VIDEOS
@@ -21,7 +21,6 @@ def _build_video_menu() -> InlineKeyboardMarkup:
 
 
 def _build_main_reply_keyboard() -> ReplyKeyboardMarkup:
-    from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
     return ReplyKeyboardMarkup(
         keyboard=[
             [KeyboardButton(text="Maktab haqida"), KeyboardButton(text="Podkastlar")],
