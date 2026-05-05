@@ -9,6 +9,9 @@ STARTED       = "STARTED"
 REGISTERED    = "REGISTERED"
 REMINDER_SENT = "REMINDER_SENT"
 
+# ── Registered users profile store: {user_id: {name, phone, grade, ...}} ─────
+_profiles: dict[int, dict] = {}
+
 _lock = threading.Lock()
 
 # ── Internal storage: {user_id (int): {"state": str, "ts": float}} ───────────
@@ -80,3 +83,40 @@ def get_all() -> dict[int, dict]:
     """Return a shallow copy of the full state store (thread-safe)."""
     with _lock:
         return dict(_store)
+
+
+def save_profile(user_id: int, name: str, phone: str, grade: str, district: str = "") -> None:
+    """Ro'yxatdan o'tgan foydalanuvchi profilini saqlaydi."""
+    with _lock:
+        _profiles[user_id] = {
+            "name": name,
+            "phone": phone,
+            "grade": grade,
+            "district": district,
+        }
+
+
+def get_profile(user_id: int) -> Optional[dict]:
+    """Foydalanuvchi profilini qaytaradi."""
+    with _lock:
+        return _profiles.get(user_id)
+
+
+def get_all_registered_profiles() -> dict[int, dict]:
+    """Barcha ro'yxatdan o'tgan foydalanuvchilar profilini qaytaradi."""
+    with _lock:
+        registered = {
+            uid: info for uid, info in _store.items()
+            if info.get("state") == REGISTERED
+        }
+        result = {}
+        for uid in registered:
+            profile = _profiles.get(uid, {})
+            result[uid] = {
+                **registered[uid],
+                "name": profile.get("name", "—"),
+                "phone": profile.get("phone", "—"),
+                "grade": profile.get("grade", "—"),
+                "district": profile.get("district", "—"),
+            }
+        return result

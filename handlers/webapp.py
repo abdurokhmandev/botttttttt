@@ -58,6 +58,13 @@ async def handle_web_app_data(message: types.Message) -> None:
     })
 
     state_store.set_state(user_id, state_store.REGISTERED)
+    state_store.save_profile(
+        user_id,
+        name=data.get("name", ""),
+        phone=data.get("phone", ""),
+        grade=data.get("grade", ""),
+        district=data.get("district", ""),
+    )
 
     # ReplyKeyboard ni yangilaymiz
     await message.answer("✅ Muvaffaqiyatli ro'yxatdan o'tdingiz!", reply_markup=_build_main_reply_keyboard())
@@ -104,6 +111,13 @@ async def webapp_api_handler(request: web.Request, bot: Bot) -> web.Response:
     })
 
     state_store.set_state(user_id, state_store.REGISTERED)
+    state_store.save_profile(
+        user_id,
+        name=data.get("name", ""),
+        phone=data.get("phone", ""),
+        grade=data.get("grade", ""),
+        district=data.get("district", ""),
+    )
 
     try:
         await bot.send_message(

@@ -5,6 +5,7 @@ from aiogram import Dispatcher, types
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 from config import VIDEOS, BASE_DIR
+from storage import video_stats
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +18,7 @@ def _build_markup(url: str) -> InlineKeyboardMarkup:
     """Two inline buttons: YouTube link + school info."""
     rows = []
     if url:
-        rows.append([InlineKeyboardButton(text="📹 Videoni ko'rish", url=url)])
+        rows.append([InlineKeyboardButton(text="📼 YouTube'da ko'rish", url=url)])
     rows.append([InlineKeyboardButton(text="🏫 Rahimov School", callback_data="school_info")])
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
@@ -30,6 +31,9 @@ async def handle_video_callback(callback: types.CallbackQuery) -> None:
     except (IndexError, ValueError):
         logger.warning("Unexpected callback data: %s", callback.data)
         return
+
+    # 📊 Statistikaga qo'shamiz
+    video_stats.increment(index)
 
     video_data = VIDEOS.get(index)
     if not video_data:

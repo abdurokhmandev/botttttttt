@@ -1,5 +1,4 @@
 from aiogram import Dispatcher, types
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 SCHOOL_INFO_TEXT = """🏫 Rahimov School — maktabimizning toshkent shahrida 2 ta: Mirzo Ulug'bek tumani va Ibn Sino mavzesida, Farg'ona shahrida esa 1 ta filiali mavjud.
 
@@ -57,7 +56,6 @@ SOCIAL_MEDIA_TEXT = """⭐️ Bizni ijtimoiy tarmoqlarda kuzatib boring:
 🔹 Instagram: instagram.com/rahimovschool
 🔹 YouTube: youtube.com/@rahimovschool"""
 
-PHONE_NUMBER = "781130005"  # 78-113-0005
 
 
 async def handle_school_info_callback(callback: types.CallbackQuery) -> None:
@@ -74,18 +72,15 @@ async def handle_social_media_text(message: types.Message) -> None:
 
 
 async def handle_phone_number(message: types.Message) -> None:
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(
-            text="📞 78-113-0005 ga qo'ng'iroq qilish",
-            url=f"tel://{PHONE_NUMBER}"
-        )]
-    ])
     await message.answer(
         "📞 <b>Rahimov School</b> bilan bog'laning:\n\n"
-        "☎️ Telefon: <b>78-113-0005</b>\n"
-        "🕐 Ish vaqti: Du–Sha, 09:00–18:00",
+        "☎️ Telefon: <b>+998 78 113 00 05</b>\n\n"
+        "🕐 Ish vaqti: Dushanba–Shanba, 09:00–18:00\n\n"
+        "📍 Manzillar:\n"
+        "• Toshkent — Mirzo Ulug'bek tumani\n"
+        "• Toshkent — Ibn Sino mavzesi\n"
+        "• Farg'ona shahri",
         parse_mode="HTML",
-        reply_markup=keyboard
     )
 
 
