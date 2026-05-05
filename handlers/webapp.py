@@ -23,8 +23,8 @@ def _build_video_menu() -> InlineKeyboardMarkup:
 def _build_main_reply_keyboard() -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text="Maktab haqida"), KeyboardButton(text="Podkastlar")],
-            [KeyboardButton(text="Ijtimoiy tarmoqlar")]
+            [KeyboardButton(text="🏫 Rahimov School"), KeyboardButton(text="📹 Rahimov Suhbatlari")],
+            [KeyboardButton(text="🔗 Ijtimoiy tarmoqlarimiz"), KeyboardButton(text="📞 Telefon raqam")]
         ],
         resize_keyboard=True
     )
