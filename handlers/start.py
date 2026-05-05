@@ -150,9 +150,12 @@ async def reg_get_district(message: types.Message, state: FSMContext) -> None:
     await state.finish()
 
     await message.answer(
+        "🎧 Qaysi darsni tinglamoqchisiz?\n\n",
+        reply_markup=_build_main_reply_keyboard()
+    )
+    await message.answer(
         text=(
             
-            "🎧 Qaysi darsni tinglamoqchisiz?\n\n"
             f"{_video_list_text()}"
         ),
         reply_markup=_build_video_menu(),

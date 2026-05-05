@@ -50,14 +50,34 @@ t.me/rahimovschool
 instagram.com/rahimovschool
 youtube.com/@rahimovschool"""
 
+SOCIAL_MEDIA_TEXT = """⭐️ Bizni ijtimoiy tarmoqlarda kuzatib boring:
 
-async def handle_school_info(callback: types.CallbackQuery) -> None:
+🔹 Telegram: t.me/rahimovschool
+🔹 Instagram: instagram.com/rahimovschool
+🔹 YouTube: youtube.com/@rahimovschool"""
+
+
+
+async def handle_school_info_callback(callback: types.CallbackQuery) -> None:
     await callback.answer()  # Remove loading spinner
     await callback.message.answer(SCHOOL_INFO_TEXT)
 
 
+async def handle_school_info_text(message: types.Message) -> None:
+    await message.answer(SCHOOL_INFO_TEXT)
+
+
+async def handle_social_media_text(message: types.Message) -> None:
+    await message.answer(SOCIAL_MEDIA_TEXT)
+
+
 def register_school_handler(dp: Dispatcher) -> None:
+    # Callback handlers
     dp.register_callback_query_handler(
-        handle_school_info,
+        handle_school_info_callback,
         lambda c: c.data == "school_info",
     )
+
+    # Message handlers (Reply Keyboard)
+    dp.register_message_handler(handle_school_info_text, text="Maktab haqida")
+    dp.register_message_handler(handle_social_media_text, text="Ijtimoiy tarmoqlar")

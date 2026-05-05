@@ -20,6 +20,17 @@ def _build_video_menu() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[buttons])
 
 
+def _build_main_reply_keyboard() -> ReplyKeyboardMarkup:
+    from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text="Maktab haqida"), KeyboardButton(text="Podkastlar")],
+            [KeyboardButton(text="Ijtimoiy tarmoqlar")]
+        ],
+        resize_keyboard=True
+    )
+
+
 def _video_list_text() -> str:
     lines = []
     for i in range(1, 6):
@@ -49,13 +60,12 @@ async def handle_web_app_data(message: types.Message) -> None:
 
     state_store.set_state(user_id, state_store.REGISTERED)
 
-    # Avval ReplyKeyboard ni olib tashlaymiz
-    await message.answer("✅", reply_markup=ReplyKeyboardRemove())
+    # ReplyKeyboard ni yangilaymiz
+    await message.answer("✅ Muvaffaqiyatli ro'yxatdan o'tdingiz!", reply_markup=_build_main_reply_keyboard())
 
     # Keyin video menyuni chiqaramiz
     await message.answer(
         text=(
-            
             "🎧 Qaysi darsni tinglamoqchisiz?\n\n"
             f"{_video_list_text()}"
         ),
@@ -100,9 +110,15 @@ async def webapp_api_handler(request: web.Request, bot: Bot) -> web.Response:
         await bot.send_message(
             chat_id=user_id,
             text=(
+                "✅ Muvaffaqiyatli ro'yxatdan o'tdingiz!\n\n"
                 "🎧 Qaysi darsni tinglamoqchisiz?\n\n"
                 f"{_video_list_text()}"
             ),
+            reply_markup=_build_main_reply_keyboard(), # Bosh reply keyboard yuboramiz
+        )
+        await bot.send_message(
+            chat_id=user_id,
+            text="Pastdagi menyu orqali darslarni tanlashingiz mumkin:",
             reply_markup=_build_video_menu(),
         )
     except Exception as e:
