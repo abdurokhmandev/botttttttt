@@ -1,8 +1,11 @@
 import json
+import os
 import time
 import threading
 from typing import Optional
 from config import STATE_FILE_PATH
+
+PROFILES_FILE_PATH = os.path.join(os.path.dirname(STATE_FILE_PATH), "profiles.json")
 
 # ── States ───────────────────────────────────────────────────────────────────
 STARTED       = "STARTED"
@@ -11,6 +14,24 @@ REMINDER_SENT = "REMINDER_SENT"
 
 # ── Registered users profile store: {user_id: {name, phone, grade, ...}} ─────
 _profiles: dict[int, dict] = {}
+
+
+def _load_profiles() -> None:
+    """Load persisted profiles from disk on startup."""
+    global _profiles
+    try:
+        with open(PROFILES_FILE_PATH, "r", encoding="utf-8") as f:
+            raw = json.load(f)
+            _profiles = {int(k): v for k, v in raw.items()}
+    except (FileNotFoundError, json.JSONDecodeError):
+        _profiles = {}
+
+
+def _save_profiles() -> None:
+    """Persist profiles to disk (call while holding _lock)."""
+    os.makedirs(os.path.dirname(PROFILES_FILE_PATH), exist_ok=True)
+    with open(PROFILES_FILE_PATH, "w", encoding="utf-8") as f:
+        json.dump(_profiles, f, ensure_ascii=False, indent=2)
 
 _lock = threading.Lock()
 
@@ -40,6 +61,7 @@ def _save() -> None:
 
 # Load on module import
 _load()
+_load_profiles()
 
 
 # ── Public API ────────────────────────────────────────────────────────────────
@@ -94,6 +116,7 @@ def save_profile(user_id: int, name: str, phone: str, grade: str, district: str 
             "grade": grade,
             "district": district,
         }
+        _save_profiles()
 
 
 def get_profile(user_id: int) -> Optional[dict]:
