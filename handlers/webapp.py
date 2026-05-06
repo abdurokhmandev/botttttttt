@@ -24,7 +24,7 @@ def _build_main_reply_keyboard() -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
         keyboard=[
             [KeyboardButton(text="📹 Rahimov Suhbatlari"), KeyboardButton(text="🔗 Ijtimoiy tarmoqlarimiz")],
-            [KeyboardButton(text="📞 Telefon raqam"), KeyboardButton(text="💬 Feedback")]
+            [KeyboardButton(text="📞 Telefon raqam"), KeyboardButton(text="💬 Fikr va mulohazalar")]
         ],
         resize_keyboard=True
     )

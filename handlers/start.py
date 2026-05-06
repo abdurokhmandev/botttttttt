@@ -48,6 +48,18 @@ async def cmd_start(message: types.Message) -> None:
     user_id = message.from_user.id
     first_name = message.from_user.first_name or "there"
 
+    from config import ADMIN_IDS
+    from handlers.webapp import _build_main_reply_keyboard
+
+    # Agar foydalanuvchi admin bo'lsa yoki oldin ro'yxatdan o'tgan bo'lsa
+    if user_id in ADMIN_IDS or state_store.get_state(user_id) == state_store.REGISTERED:
+        await message.answer(
+            f"👋 Assalomu alaykum, {first_name}!\n\n"
+            "Asosiy menyuga xush kelibsiz. Quyidagi bo'limlardan birini tanlang:",
+            reply_markup=_build_main_reply_keyboard()
+        )
+        return
+
     state_store.set_state(user_id, state_store.STARTED)
 
     caption = (

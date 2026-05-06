@@ -182,14 +182,15 @@ async def handle_social_media_text(message: types.Message) -> None:
 
 async def handle_phone_number(message: types.Message) -> None:
     await message.answer(
-        "📞 <b>Rahimov School</b> bilan bog'laning:\n\n"
-        "☎️ Telefon: <b>+998 78 113 00 05</b>\n\n"
+        "📞 Rahimov School bilan bog'laning:\n\n"
+        "☎️ Telefon: +998781130005\n\n"
         "🕐 Ish vaqti: Dushanba–Shanba, 09:00–18:00\n\n"
         "📍 Manzillar:\n"
-        "• Toshkent — Mirzo Ulug'bek tumani\n"
-        "• Toshkent — Ibn Sino mavzesi\n"
-        "• Farg'ona shahri",
+        "• <a href=\"https://yandex.uz/maps/-/CPWoN6I3\">Toshkent — Mirzo Ulug'bek tumani</a>\n"
+        "• <a href=\"https://yandex.uz/maps/-/CPWoN0yA\">Toshkent — Ibn Sino mavzesi</a>\n"
+        "• <a href=\"https://yandex.uz/maps/-/CPWoN2i5\">Farg'ona shahri</a>",
         parse_mode="HTML",
+        disable_web_page_preview=True
     )
 
 
@@ -207,7 +208,7 @@ def register_school_handler(dp: Dispatcher) -> None:
     dp.register_message_handler(handle_phone_number, text="📞 Telefon raqam", state="*")
 
     # Feedback
-    dp.register_message_handler(handle_feedback_start, text="💬 Feedback", state="*")
+    dp.register_message_handler(handle_feedback_start, text="💬 Fikr va mulohazalar", state="*")
     dp.register_message_handler(
         handle_feedback_cancel, commands=["cancel"], state=FeedbackState.waiting_for_question
     )

@@ -136,4 +136,4 @@ def register_video_handlers(dp: Dispatcher) -> None:
         handle_video_callback,
         lambda c: c.data and c.data.startswith("video_"),
     )
-    dp.register_message_handler(handle_podcasts_text, text="Podkastlar")
+    dp.register_message_handler(handle_podcasts_text, text="📹 Rahimov Suhbatlari")
