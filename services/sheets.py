@@ -87,3 +87,24 @@ def get_all_registered_ids() -> list[int]:
     except Exception:
         logger.exception("❌ Failed to fetch IDs from Google Sheets")
         return []
+
+def get_all_registered_profiles() -> dict[int, dict]:
+    """Fetch all Telegram IDs and profiles from the Google Sheet."""
+    try:
+        sheet = _get_sheet()
+        records = sheet.get_all_records()
+        profiles = {}
+        for row in records:
+            tid = row.get("Telegram ID")
+            if tid and str(tid).isdigit():
+                uid = int(tid)
+                profiles[uid] = {
+                    "name": str(row.get("Full Name", "—")),
+                    "phone": str(row.get("Phone", "—")),
+                    "grade": str(row.get("Grade", "—")),
+                    "district": str(row.get("District", "—")),
+                }
+        return profiles
+    except Exception:
+        logger.exception("❌ Failed to fetch profiles from Google Sheets")
+        return {}

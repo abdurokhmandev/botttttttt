@@ -84,20 +84,26 @@ async def _get_all_registered_list() -> list:
     Local profile'dan olinadi, yo'q bo'lsa Google Sheets'dan.
     """
     local_profiles = state_store.get_all_registered_profiles()
-    sheet_ids = sheets.get_all_registered_ids()
+    sheet_profiles = sheets.get_all_registered_profiles()
 
-    # Barcha IDlarni birlashtir
-    all_ids = set(local_profiles.keys()) | set(sheet_ids)
+    all_ids = set(local_profiles.keys()) | set(sheet_profiles.keys())
 
     result = []
     for uid in all_ids:
-        profile = local_profiles.get(uid, {})
+        loc = local_profiles.get(uid, {})
+        sht = sheet_profiles.get(uid, {})
+        
+        name = loc.get("name") if loc.get("name", "—") != "—" else sht.get("name", "—")
+        phone = loc.get("phone") if loc.get("phone", "—") != "—" else sht.get("phone", "—")
+        grade = loc.get("grade") if loc.get("grade", "—") != "—" else sht.get("grade", "—")
+        district = loc.get("district") if loc.get("district", "—") != "—" else sht.get("district", "—")
+
         result.append({
             "uid": uid,
-            "name": profile.get("name", "—"),
-            "phone": profile.get("phone", "—"),
-            "grade": profile.get("grade", "—"),
-            "district": profile.get("district", "—"),
+            "name": name,
+            "phone": phone,
+            "grade": grade,
+            "district": district,
         })
     return result
 
