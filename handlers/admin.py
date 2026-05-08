@@ -4,6 +4,7 @@ from aiogram import Dispatcher, types
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton
+from aiogram.utils.exceptions import BotBlocked, UserDeactivated
 
 from config import ADMIN_IDS, VIDEOS
 from storage import state_store, video_stats
@@ -321,6 +322,14 @@ async def execute_broadcast(callback: types.CallbackQuery, state: FSMContext):
             count += 1
             if count % 20 == 0:
                 await asyncio.sleep(0.5)
+        except BotBlocked:
+            logger.warning("Bot was blocked by user %s", user_id)
+            failed += 1
+            error_msg = "Foydalanuvchi botni bloklagan"
+        except UserDeactivated:
+            logger.warning("User %s is deactivated", user_id)
+            failed += 1
+            error_msg = "Foydalanuvchi akkaunti o'chirilgan"
         except Exception as e:
             logger.error("Failed to send broadcast to %s: %s", user_id, e)
             failed += 1
@@ -476,6 +485,16 @@ async def dm_confirm(callback: types.CallbackQuery, state: FSMContext):
         )
         await callback.message.edit_text(
             f"✅ Xabar <b>{name}</b> (<code>{target_id}</code>) ga muvaffaqiyatli yuborildi!",
+            parse_mode="HTML"
+        )
+    except BotBlocked:
+        await callback.message.edit_text(
+            f"❌ Xabar yuborishda xatolik: <b>{name}</b> botni bloklagan.",
+            parse_mode="HTML"
+        )
+    except UserDeactivated:
+        await callback.message.edit_text(
+            f"❌ Xabar yuborishda xatolik: <b>{name}</b> o'z akkauntini o'chirgan.",
             parse_mode="HTML"
         )
     except Exception as e:
