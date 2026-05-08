@@ -51,11 +51,33 @@ async def admin_stats_api_handler(request: web.Request) -> web.Response:
     # Reverse to get newest first (assuming append order)
     recent_users = users_list[::-1][:20] 
 
+    # 4. District and Grade stats
+    district_counts = {}
+    grade_counts = {}
+    for u in users_list:
+        d = u.get("district")
+        if not d or d == "—":
+            d = "Noma'lum"
+        district_counts[d] = district_counts.get(d, 0) + 1
+
+        g = u.get("grade")
+        if not g or g == "—":
+            g = "Noma'lum"
+        grade_counts[g] = grade_counts.get(g, 0) + 1
+
     return web.json_response({
         "ok": True,
         "data": {
             "user_stats": user_stats,
             "video_stats": video_data,
-            "recent_users": recent_users
+            "recent_users": recent_users,
+            "district_stats": {
+                "labels": list(district_counts.keys()),
+                "data": list(district_counts.values())
+            },
+            "grade_stats": {
+                "labels": list(grade_counts.keys()),
+                "data": list(grade_counts.values())
+            }
         }
     })
