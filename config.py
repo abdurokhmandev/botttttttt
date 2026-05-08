@@ -1,8 +1,8 @@
 import os
+import re
 from dotenv import load_dotenv
 
 load_dotenv()
-
 
 def _require(key: str) -> str:
     val = os.getenv(key)
@@ -66,6 +66,16 @@ VIDEOS: dict[int, dict] = {
         "url": "https://youtu.be/8-6Wcy9DE_c?si=3qqCa4v2fjF0F_k8"
     },
 }
+
+_video_pattern = re.compile(r"^VIDEO_(\d+)_(TITLE|DESCRIPTION|URL|VIDEO|PHOTO)$", re.IGNORECASE)
+for key, value in os.environ.items():
+    match = _video_pattern.match(key)
+    if match:
+        index = int(match.group(1))
+        field = match.group(2).lower()
+        if index not in VIDEOS:
+            VIDEOS[index] = {}
+        VIDEOS[index][field] = value.replace("\\n", "\n")
 
 CREDENTIALS_PATH = os.path.join(BASE_DIR, "credentials.json")
 STATE_FILE_PATH = os.path.join(BASE_DIR, "data", "state.json")

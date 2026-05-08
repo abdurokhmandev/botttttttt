@@ -15,9 +15,11 @@ logger = logging.getLogger(__name__)
 def _build_video_menu() -> InlineKeyboardMarkup:
     buttons = [
         InlineKeyboardButton(text=str(i), callback_data=f"video_{i}")
-        for i in range(1, 6)
+        for i in sorted(VIDEOS.keys())
     ]
-    return InlineKeyboardMarkup(inline_keyboard=[buttons])
+    # Group buttons into rows of 5
+    rows = [buttons[i:i + 5] for i in range(0, len(buttons), 5)]
+    return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 def _build_main_reply_keyboard() -> ReplyKeyboardMarkup:
@@ -32,7 +34,7 @@ def _build_main_reply_keyboard() -> ReplyKeyboardMarkup:
 
 def _video_list_text() -> str:
     lines = []
-    for i in range(1, 6):
+    for i in sorted(VIDEOS.keys()):
         title = VIDEOS.get(i, {}).get("title", f"Video {i}")
         lines.append(f"{i}. {title}")
     return "\n".join(lines)

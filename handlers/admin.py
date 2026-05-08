@@ -140,11 +140,13 @@ async def show_stats(message: types.Message):
     all_users = await _get_combined_users()
     total = len(all_users)
     registered = sum(1 for u in all_users.values() if u.get("state") == state_store.REGISTERED)
+    blocked = sum(1 for u in all_users.values() if u.get("blocked") is True)
     text = (
         "📊 <b>Bot Statistikasi:</b>\n\n"
         f"👥 Umumiy foydalanuvchilar: {total}\n"
         f"✅ Ro'yxatdan o'tganlar: {registered}\n"
-        f"⏳ Ro'yxatdan o'tmaganlar: {total - registered}"
+        f"⏳ Ro'yxatdan o'tmaganlar: {total - registered}\n"
+        f"🚫 Botni bloklaganlar: {blocked}"
     )
     await message.answer(text, parse_mode="HTML")
 
@@ -324,6 +326,7 @@ async def execute_broadcast(callback: types.CallbackQuery, state: FSMContext):
                 await asyncio.sleep(0.5)
         except BotBlocked:
             logger.warning("Bot was blocked by user %s", user_id)
+            state_store.set_metadata(user_id, "blocked", True)
             failed += 1
             error_msg = "Foydalanuvchi botni bloklagan"
         except UserDeactivated:
@@ -488,6 +491,7 @@ async def dm_confirm(callback: types.CallbackQuery, state: FSMContext):
             parse_mode="HTML"
         )
     except BotBlocked:
+        state_store.set_metadata(target_id, "blocked", True)
         await callback.message.edit_text(
             f"❌ Xabar yuborishda xatolik: <b>{name}</b> botni bloklagan.",
             parse_mode="HTML"
