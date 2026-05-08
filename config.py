@@ -18,6 +18,7 @@ WEBAPP_URL: str = _require("WEBAPP_URL")
 ADMIN_IDS: list[int] = [
     int(i.strip()) for i in os.getenv("ADMIN_IDS", "").split(",") if i.strip()
 ]
+ADMIN_PASSWORD: str = os.getenv("ADMIN_PASSWORD", "admin123")
 
 # ── School ───────────────────────────────────────────────────────────────────
 SCHOOL_INFO: str = os.getenv(

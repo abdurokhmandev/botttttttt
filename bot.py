@@ -11,6 +11,7 @@ from handlers.webapp import register_webapp_handler, webapp_api_handler
 from handlers.videos import register_video_handlers
 from handlers.school import register_school_handler
 from handlers.admin import register_admin_handlers
+from handlers.admin_api import admin_stats_api_handler
 from services.reminder import check_reminders
 
 import os
@@ -66,6 +67,7 @@ async def on_startup(dispatcher: Dispatcher) -> None:
         return await webapp_api_handler(request, bot)
 
     app.router.add_post('/api/submit', handler_wrapper)
+    app.router.add_post('/api/admin/stats', admin_stats_api_handler)
 
     for route in list(app.router.routes()):
         cors.add(route)
