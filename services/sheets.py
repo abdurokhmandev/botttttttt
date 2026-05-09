@@ -108,3 +108,20 @@ def get_all_registered_profiles() -> dict[int, dict]:
     except Exception:
         logger.exception("❌ Failed to fetch profiles from Google Sheets")
         return {}
+
+def delete_row_by_tid(tid: int) -> bool:
+    """Delete a user's row from Google Sheets by Telegram ID."""
+    try:
+        sheet = _get_sheet()
+        # The first column is 1. Telegram ID is the 7th column (index 7 in gspread 1-based indexing)
+        cell = sheet.find(str(tid), in_column=7)
+        if cell:
+            sheet.delete_rows(cell.row)
+            logger.info("✅ Row deleted from Sheets for user %s", tid)
+            return True
+    except gspread.exceptions.CellNotFound:
+        # User not found in Google Sheets, which is fine
+        pass
+    except Exception:
+        logger.exception("❌ Failed to delete row from Google Sheets for user %s", tid)
+    return False

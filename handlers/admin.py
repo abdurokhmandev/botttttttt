@@ -27,6 +27,10 @@ class DirectMessageStates(StatesGroup):
     GET_MESSAGE = State()
     CONFIRM = State()
 
+class DeleteUserStates(StatesGroup):
+    SELECT_USER = State()
+    CONFIRM = State()
+
 # ── Keyboards ─────────────────────────────────────────────────────────────────
 
 def _admin_main_keyboard():
@@ -34,7 +38,7 @@ def _admin_main_keyboard():
         keyboard=[
             [KeyboardButton("📢 Xabar yuborish"), KeyboardButton("👤 Alohida xabar")],
             [KeyboardButton("📊 Statistika"), KeyboardButton("🎬 Video statistika")],
-            [KeyboardButton("📋 Ro'yxatdan o'tganlar")],
+            [KeyboardButton("📋 Ro'yxatdan o'tganlar"), KeyboardButton("🗑 Foydalanuvchini o'chirish")],
         ],
         resize_keyboard=True
     )
@@ -509,6 +513,129 @@ async def dm_confirm(callback: types.CallbackQuery, state: FSMContext):
         )
     await callback.message.answer("🏠 Admin panel:", reply_markup=_admin_main_keyboard())
 
+# ── Delete User with Pagination ─────────────────────────────────────────────
+
+def _del_user_keyboard(users_list: list, page: int) -> InlineKeyboardMarkup:
+    """10 talik sahifada user tugmalari + pagination for deleting."""
+    start = page * PAGE_SIZE
+    end = min(start + PAGE_SIZE, len(users_list))
+    total_pages = max(1, (len(users_list) + PAGE_SIZE - 1) // PAGE_SIZE)
+
+    buttons = []
+    for u in users_list[start:end]:
+        label = f"🗑 {u['name'][:18]} | 📱 {u['phone']}"
+        buttons.append([InlineKeyboardButton(text=label, callback_data=f"delsel_{u['uid']}")])
+
+    nav = []
+    if page > 0:
+        nav.append(InlineKeyboardButton(text="◀️ Back", callback_data=f"delpage_{page - 1}"))
+    nav.append(InlineKeyboardButton(text=f"📄 {page + 1}/{total_pages}", callback_data="noop"))
+    if page < total_pages - 1:
+        nav.append(InlineKeyboardButton(text="Next ▶️", callback_data=f"delpage_{page + 1}"))
+    if nav:
+        buttons.append(nav)
+
+    buttons.append([InlineKeyboardButton(text="🚫 Bekor qilish", callback_data="del_cancel")])
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
+async def _send_del_selector(message: types.Message, users_list: list, page: int, edit: bool = False):
+    total_pages = max(1, (len(users_list) + PAGE_SIZE - 1) // PAGE_SIZE)
+    text = (
+        f"🗑 <b>Qaysi foydalanuvchini o'chirmoqchisiz?</b>\n"
+        f"<i>Sahifa {page + 1}/{total_pages} — Jami {len(users_list)} ta</i>"
+    )
+    markup = _del_user_keyboard(users_list, page)
+    if edit:
+        try:
+            await message.edit_text(text, parse_mode="HTML", reply_markup=markup)
+        except Exception:
+            await message.answer(text, parse_mode="HTML", reply_markup=markup)
+    else:
+        await message.answer(text, parse_mode="HTML", reply_markup=markup)
+
+
+async def start_delete_user(message: types.Message, state: FSMContext):
+    if message.from_user.id not in ADMIN_IDS:
+        return
+    await message.answer("⌛ Yuklanmoqda...")
+    users_list = await _get_all_registered_list()
+    if not users_list:
+        await message.answer("📋 Hali hech kim ro'yxatdan o'tmagan.")
+        return
+
+    await _send_del_selector(message, users_list, page=0, edit=False)
+    await DeleteUserStates.SELECT_USER.set()
+    await state.update_data(del_page=0)
+
+
+async def del_page_callback(callback: types.CallbackQuery, state: FSMContext):
+    if callback.data == "noop":
+        await callback.answer()
+        return
+    if callback.data == "del_cancel":
+        await state.finish()
+        await callback.message.edit_text("❌ Bekor qilindi.")
+        return
+
+    page = int(callback.data.split("_")[1])
+    users_list = await _get_all_registered_list()
+    await state.update_data(del_page=page)
+    await _send_del_selector(callback.message, users_list, page, edit=True)
+    await callback.answer()
+
+
+async def del_select_user(callback: types.CallbackQuery, state: FSMContext):
+    if callback.data == "del_cancel":
+        await state.finish()
+        await callback.message.edit_text("❌ Bekor qilindi.")
+        return
+
+    user_id = int(callback.data.split("_")[1])
+    users_list = await _get_all_registered_list()
+    user_info = next((u for u in users_list if u["uid"] == user_id), None)
+    name = user_info["name"] if user_info else f"ID: {user_id}"
+
+    await state.update_data(target_user_id=user_id, target_user_name=name)
+    await DeleteUserStates.CONFIRM.set()
+    
+    markup = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="✅ Ha, o'chirish", callback_data="del_confirm")],
+        [InlineKeyboardButton(text="❌ Bekor qilish", callback_data="del_cancel_confirm")],
+    ])
+    await callback.message.edit_text(
+        f"⚠️ <b>Diqqat!</b>\n\n"
+        f"Siz rostana ham <b>{name}</b> (<code>{user_id}</code>) ni o'chirib tashlamoqchimisiz?\n"
+        f"Bu amalni ortga qaytarib bo'lmaydi!",
+        parse_mode="HTML",
+        reply_markup=markup
+    )
+
+
+async def del_confirm(callback: types.CallbackQuery, state: FSMContext):
+    if callback.data == "del_cancel_confirm":
+        await state.finish()
+        await callback.message.edit_text("❌ Bekor qilindi.")
+        await callback.message.answer("🏠 Admin panel:", reply_markup=_admin_main_keyboard())
+        return
+
+    data = await state.get_data()
+    await state.finish()
+    target_id = data["target_user_id"]
+    name = data.get("target_user_name", "Foydalanuvchi")
+
+    await callback.message.edit_text("⌛ O'chirilmoqda...")
+
+    # Bazadan o'chirish
+    state_store.delete_user(target_id)
+    sheets.delete_row_by_tid(target_id)
+
+    await callback.message.edit_text(
+        f"✅ <b>{name}</b> (<code>{target_id}</code>) muvaffaqiyatli o'chirildi!",
+        parse_mode="HTML"
+    )
+    await callback.message.answer("🏠 Admin panel:", reply_markup=_admin_main_keyboard())
+
 # ── Registration ───────────────────────────────────────────────────────────────
 
 def register_admin_handlers(dp: Dispatcher):
@@ -518,6 +645,7 @@ def register_admin_handlers(dp: Dispatcher):
     dp.register_message_handler(show_registered_users, lambda m: m.text == "📋 Ro'yxatdan o'tganlar", state="*")
     dp.register_message_handler(start_broadcast, lambda m: m.text == "📢 Xabar yuborish", state="*")
     dp.register_message_handler(start_direct_message, lambda m: m.text == "👤 Alohida xabar", state="*")
+    dp.register_message_handler(start_delete_user, lambda m: m.text == "🗑 Foydalanuvchini o'chirish", state="*")
 
     # Broadcast FSM
     dp.register_callback_query_handler(set_target, state=BroadcastStates.SELECT_AUDIENCE)
@@ -547,3 +675,16 @@ def register_admin_handlers(dp: Dispatcher):
     )
     dp.register_message_handler(dm_get_message, content_types=types.ContentType.ANY, state=DirectMessageStates.GET_MESSAGE)
     dp.register_callback_query_handler(dm_confirm, lambda c: c.data in ("dm_confirm", "dm_cancel_confirm"), state=DirectMessageStates.CONFIRM)
+
+    # Delete User FSM
+    dp.register_callback_query_handler(
+        del_page_callback,
+        lambda c: c.data and (c.data.startswith("delpage_") or c.data in ("del_cancel", "noop")),
+        state=DeleteUserStates.SELECT_USER,
+    )
+    dp.register_callback_query_handler(
+        del_select_user,
+        lambda c: c.data and c.data.startswith("delsel_"),
+        state=DeleteUserStates.SELECT_USER,
+    )
+    dp.register_callback_query_handler(del_confirm, lambda c: c.data in ("del_confirm", "del_cancel_confirm"), state=DeleteUserStates.CONFIRM)

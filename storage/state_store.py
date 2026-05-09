@@ -143,3 +143,20 @@ def get_all_registered_profiles() -> dict[int, dict]:
                 "district": profile.get("district", "—"),
             }
         return result
+
+
+def delete_user(user_id: int) -> None:
+    """Foydalanuvchini local bazadan o'chiradi."""
+    with _lock:
+        deleted = False
+        if user_id in _store:
+            del _store[user_id]
+            deleted = True
+        if user_id in _profiles:
+            del _profiles[user_id]
+            deleted = True
+        
+        if deleted:
+            _save()
+            _save_profiles()
+
