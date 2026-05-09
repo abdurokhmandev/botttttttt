@@ -58,7 +58,7 @@ async def on_startup(dispatcher: Dispatcher) -> None:
             allow_credentials=False,   # Must be False when allow_origin="*"
             expose_headers="*",
             allow_headers="*",
-            allow_methods=["POST", "OPTIONS"],  # iOS preflight requires this
+            allow_methods=["GET", "POST", "OPTIONS"],  # iOS preflight requires this
         )
     })
 
@@ -66,8 +66,28 @@ async def on_startup(dispatcher: Dispatcher) -> None:
     async def handler_wrapper(request):
         return await webapp_api_handler(request, bot)
 
+    async def serve_webappregister(request: web.Request) -> web.Response:
+        try:
+            with open("webapp_fixed.html", "r", encoding="utf-8") as f:
+                html = f.read()
+            return web.Response(text=html, content_type="text/html")
+        except Exception as e:
+            logger.error(f"Error serving webappregister: {e}")
+            return web.Response(status=500, text="Internal Server Error")
+
+    async def serve_marketingadmin(request: web.Request) -> web.Response:
+        try:
+            with open("admin.html", "r", encoding="utf-8") as f:
+                html = f.read()
+            return web.Response(text=html, content_type="text/html")
+        except Exception as e:
+            logger.error(f"Error serving marketingadmin: {e}")
+            return web.Response(status=500, text="Internal Server Error")
+
     app.router.add_post('/api/submit', handler_wrapper)
     app.router.add_post('/api/admin/stats', admin_stats_api_handler)
+    app.router.add_get('/webappregister', serve_webappregister)
+    app.router.add_get('/marketingadmin', serve_marketingadmin)
 
     for route in list(app.router.routes()):
         cors.add(route)

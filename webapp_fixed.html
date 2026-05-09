@@ -507,7 +507,7 @@
       source:   sourceSel.value,
     };
 
-    fetch('https://botttttttt-production.up.railway.app/api/submit', {
+    fetch('/api/submit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
