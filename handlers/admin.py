@@ -93,10 +93,13 @@ async def _get_all_registered_list() -> list:
     local_profiles = state_store.get_all_registered_profiles()
     sheet_profiles = sheets.get_all_registered_profiles()
 
-    all_ids = set(local_profiles.keys()) | set(sheet_profiles.keys())
+    ordered_ids = list(sheet_profiles.keys())
+    for uid in local_profiles.keys():
+        if uid not in sheet_profiles:
+            ordered_ids.append(uid)
 
     result = []
-    for uid in all_ids:
+    for uid in ordered_ids:
         loc = local_profiles.get(uid, {})
         sht = sheet_profiles.get(uid, {})
         
@@ -112,7 +115,7 @@ async def _get_all_registered_list() -> list:
             "grade": grade,
             "district": district,
         })
-    return result
+    return result[::-1]
 
 
 def _format_users_page(users_list: list, page: int) -> str:
@@ -231,7 +234,7 @@ async def show_unregistered_users(message: types.Message):
         return
     await message.answer("⌛ Yuklanmoqda...")
     all_users = await _get_combined_users()
-    unreg_ids = [uid for uid, info in all_users.items() if info.get("state") != state_store.REGISTERED]
+    unreg_ids = [uid for uid, info in all_users.items() if info.get("state") != state_store.REGISTERED][::-1]
     
     if not unreg_ids:
         await message.answer("📋 Barcha ro'yxatdan o'tgan.")
@@ -252,7 +255,7 @@ async def unregistered_pagination(callback: types.CallbackQuery):
 
     page = int(callback.data.split("_page_")[1])
     all_users = await _get_combined_users()
-    unreg_ids = [uid for uid, info in all_users.items() if info.get("state") != state_store.REGISTERED]
+    unreg_ids = [uid for uid, info in all_users.items() if info.get("state") != state_store.REGISTERED][::-1]
     
     total_pages = max(1, (len(unreg_ids) + PAGE_SIZE - 1) // PAGE_SIZE)
     page = max(0, min(page, total_pages - 1))

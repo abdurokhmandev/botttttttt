@@ -48,8 +48,8 @@ async def admin_stats_api_handler(request: web.Request) -> web.Response:
 
     # 3. Recent registered users
     users_list = await _get_all_registered_list()
-    # Reverse to get newest first (assuming append order)
-    recent_users = users_list[::-1][:20] 
+    # List is already newest first
+    recent_users = users_list[:20] 
 
     # 4. District and Grade stats
     district_counts = {}
