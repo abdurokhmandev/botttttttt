@@ -107,7 +107,7 @@ def get_all() -> dict[int, dict]:
         return dict(_store)
 
 
-def save_profile(user_id: int, name: str, phone: str, grade: str, district: str = "") -> None:
+def save_profile(user_id: int, name: str, phone: str, grade: str, district: str = "", school: str = "") -> None:
     """Ro'yxatdan o'tgan foydalanuvchi profilini saqlaydi."""
     with _lock:
         _profiles[user_id] = {
@@ -115,6 +115,7 @@ def save_profile(user_id: int, name: str, phone: str, grade: str, district: str 
             "phone": phone,
             "grade": grade,
             "district": district,
+            "school": school,
         }
         _save_profiles()
 
@@ -141,6 +142,7 @@ def get_all_registered_profiles() -> dict[int, dict]:
                 "phone": profile.get("phone", "—"),
                 "grade": profile.get("grade", "—"),
                 "district": profile.get("district", "—"),
+                "school": profile.get("school", "—"),
             }
         return result
 

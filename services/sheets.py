@@ -16,7 +16,7 @@ _SCOPES = [
     "https://www.googleapis.com/auth/drive",
 ]
 
-HEADERS = ["Date", "Full Name", "Phone", "Grade", "District", "Source", "Telegram ID"]
+HEADERS = ["Date", "Full Name", "Phone", "Grade", "District", "Source", "Telegram ID", "Rahimov School"]
 
 _client: Optional[gspread.Client] = None
 _sheet: Optional[gspread.Worksheet] = None
@@ -124,4 +124,21 @@ def delete_row_by_tid(tid: int) -> bool:
         pass
     except Exception:
         logger.exception("❌ Failed to delete row from Google Sheets for user %s", tid)
+    return False
+
+def update_school_status(tid: int, status: str) -> bool:
+    """Update the Rahimov School status for a given Telegram ID."""
+    try:
+        sheet = _get_sheet()
+        # The first column is 1. Telegram ID is the 7th column
+        cell = sheet.find(str(tid), in_column=7)
+        if cell:
+            # Rahimov School is the 8th column
+            sheet.update_cell(cell.row, 8, status)
+            logger.info("✅ School status updated in Sheets for user %s", tid)
+            return True
+    except gspread.exceptions.CellNotFound:
+        pass
+    except Exception:
+        logger.exception("❌ Failed to update school status in Google Sheets for user %s", tid)
     return False

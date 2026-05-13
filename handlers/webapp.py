@@ -68,16 +68,15 @@ async def handle_web_app_data(message: types.Message) -> None:
         district=data.get("district", ""),
     )
 
-    # ReplyKeyboard ni yangilaymiz
-    await message.answer("✅ Muvaffaqiyatli ro'yxatdan o'tdingiz!", reply_markup=_build_main_reply_keyboard())
-
-    # Keyin video menyuni chiqaramiz
+    markup = InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="✅ Ha o'qiydi", callback_data="school_yes"),
+            InlineKeyboardButton(text="❌ Yo'q o'qimaydi", callback_data="school_no")
+        ]
+    ])
     await message.answer(
-        text=(
-            "🎧 Qaysi darsni tinglamoqchisiz?\n\n"
-            f"{_video_list_text()}"
-        ),
-        reply_markup=_build_video_menu(),
+        text="🏫 Bolangiz Rahimov School'da o'qiydimi?",
+        reply_markup=markup
     )
 
     # Ro'yxatdan o'tish taklifnomasi xabarini o'chirish
@@ -122,22 +121,19 @@ async def webapp_api_handler(request: web.Request, bot: Bot) -> web.Response:
     )
 
     try:
+        markup = InlineKeyboardMarkup(inline_keyboard=[
+            [
+                InlineKeyboardButton(text="✅ Ha o'qiydi", callback_data="school_yes"),
+                InlineKeyboardButton(text="❌ Yo'q o'qimaydi", callback_data="school_no")
+            ]
+        ])
         await bot.send_message(
             chat_id=user_id,
-            text=(
-                "✅ Muvaffaqiyatli ro'yxatdan o'tdingiz!\n\n"
-                "🎧 Qaysi darsni tinglamoqchisiz?\n\n"
-                f"{_video_list_text()}"
-            ),
-            reply_markup=_build_main_reply_keyboard(), # Bosh reply keyboard yuboramiz
-        )
-        await bot.send_message(
-            chat_id=user_id,
-            text="Pastdagi menyu orqali darslarni tanlashingiz mumkin:",
-            reply_markup=_build_video_menu(),
+            text="🏫 Bolangiz Rahimov School'da o'qiydimi?",
+            reply_markup=markup
         )
     except Exception as e:
-        logger.error("Failed to send success message to user %s: %s", user_id, e)
+        logger.error("Failed to send school question to user %s: %s", user_id, e)
         return web.json_response({"ok": False, "error": "Failed to send message"}, status=500)
 
     # Ro'yxatdan o'tish taklifnomasi xabarini o'chirish
@@ -151,8 +147,55 @@ async def webapp_api_handler(request: web.Request, bot: Bot) -> web.Response:
     return web.json_response({"ok": True})
 
 
+async def school_status_callback(callback: types.CallbackQuery):
+    user_id = callback.from_user.id
+    status = "✅" if callback.data == "school_yes" else "❌"
+    
+    # Update local profile
+    profile = state_store.get_profile(user_id)
+    if profile:
+        state_store.save_profile(
+            user_id,
+            name=profile.get("name", ""),
+            phone=profile.get("phone", ""),
+            grade=profile.get("grade", ""),
+            district=profile.get("district", ""),
+            school=status
+        )
+
+    # Update Google Sheets
+    sheets.update_school_status(user_id, status)
+    
+    # Delete the question message
+    try:
+        await callback.message.delete()
+    except Exception:
+        pass
+    
+    # Send success and video list
+    await callback.bot.send_message(
+        chat_id=user_id,
+        text=(
+            "✅ Muvaffaqiyatli ro'yxatdan o'tdingiz!\n\n"
+            "🎧 Qaysi darsni tinglamoqchisiz?\n\n"
+            f"{_video_list_text()}"
+        ),
+        reply_markup=_build_main_reply_keyboard(),
+    )
+    await callback.bot.send_message(
+        chat_id=user_id,
+        text="Pastdagi menyu orqali darslarni tanlashingiz mumkin:",
+        reply_markup=_build_video_menu(),
+    )
+    await callback.answer()
+
 def register_webapp_handler(dp: Dispatcher) -> None:
     dp.register_message_handler(
         handle_web_app_data,
         content_types=types.ContentType.WEB_APP_DATA,
     )
+    dp.register_callback_query_handler(
+        school_status_callback,
+        lambda c: c.data in ("school_yes", "school_no")
+    )
+

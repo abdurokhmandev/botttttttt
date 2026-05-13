@@ -38,7 +38,8 @@ def _admin_main_keyboard():
         keyboard=[
             [KeyboardButton("📢 Xabar yuborish"), KeyboardButton("👤 Alohida xabar")],
             [KeyboardButton("📊 Statistika"), KeyboardButton("🎬 Video statistika")],
-            [KeyboardButton("📋 Ro'yxatdan o'tganlar"), KeyboardButton("🗑 Foydalanuvchini o'chirish")],
+            [KeyboardButton("📋 Ro'yxatdan o'tganlar"), KeyboardButton("⏳ Ro'yxatdan o'tmaganlar")],
+            [KeyboardButton("🗑 Foydalanuvchini o'chirish")],
         ],
         resize_keyboard=True
     )
@@ -48,6 +49,7 @@ def _audience_keyboard():
         [InlineKeyboardButton(text="👥 Barchaga", callback_data="target_all")],
         [InlineKeyboardButton(text="❌ Ro'yxatdan o'tmaganlarga", callback_data="target_unregistered")],
         [InlineKeyboardButton(text="✅ Ro'yxatdan o'tganlarga", callback_data="target_registered")],
+        [InlineKeyboardButton(text="⏳ Eski ro'yxatdan o'tganlarga", callback_data="target_old_registered")],
         [InlineKeyboardButton(text="🚫 Bekor qilish", callback_data="cancel_broadcast")],
     ])
 
@@ -212,6 +214,57 @@ async def registered_pagination(callback: types.CallbackQuery):
         pass
     await callback.answer()
 
+# ── Unregistered Users List with Pagination ────────────────────────────────────
+
+def _format_unregistered_page(unreg_ids: list, page: int) -> str:
+    start = page * PAGE_SIZE
+    end = min(start + PAGE_SIZE, len(unreg_ids))
+    chunk = unreg_ids[start:end]
+
+    lines = [f"⏳ <b>Ro'yxatdan o'tmaganlar ({start + 1}–{end} / {len(unreg_ids)}):</b>\n"]
+    for i, uid in enumerate(chunk, start + 1):
+        lines.append(f"<b>{i}.</b> 🆔 <code>{uid}</code>")
+    return "\n".join(lines)
+
+async def show_unregistered_users(message: types.Message):
+    if message.from_user.id not in ADMIN_IDS:
+        return
+    await message.answer("⌛ Yuklanmoqda...")
+    all_users = await _get_combined_users()
+    unreg_ids = [uid for uid, info in all_users.items() if info.get("state") != state_store.REGISTERED]
+    
+    if not unreg_ids:
+        await message.answer("📋 Barcha ro'yxatdan o'tgan.")
+        return
+        
+    total_pages = max(1, (len(unreg_ids) + PAGE_SIZE - 1) // PAGE_SIZE)
+    text = _format_unregistered_page(unreg_ids, 0)
+    markup = _pagination_keyboard(0, total_pages, "unreglist") if total_pages > 1 else None
+    await message.answer(text, parse_mode="HTML", reply_markup=markup)
+
+async def unregistered_pagination(callback: types.CallbackQuery):
+    if callback.from_user.id not in ADMIN_IDS:
+        await callback.answer()
+        return
+    if callback.data == "noop":
+        await callback.answer()
+        return
+
+    page = int(callback.data.split("_page_")[1])
+    all_users = await _get_combined_users()
+    unreg_ids = [uid for uid, info in all_users.items() if info.get("state") != state_store.REGISTERED]
+    
+    total_pages = max(1, (len(unreg_ids) + PAGE_SIZE - 1) // PAGE_SIZE)
+    page = max(0, min(page, total_pages - 1))
+
+    text = _format_unregistered_page(unreg_ids, page)
+    markup = _pagination_keyboard(page, total_pages, "unreglist")
+    try:
+        await callback.message.edit_text(text, parse_mode="HTML", reply_markup=markup)
+    except Exception:
+        pass
+    await callback.answer()
+
 # ── Broadcast Flow ────────────────────────────────────────────────────────────
 
 async def start_broadcast(message: types.Message):
@@ -230,6 +283,7 @@ async def set_target(callback: types.CallbackQuery, state: FSMContext):
         "target_all": "all",
         "target_registered": "registered",
         "target_unregistered": "unregistered",
+        "target_old_registered": "old_registered",
     }
     target = target_map.get(callback.data, "all")
     await state.update_data(target=target)
@@ -285,6 +339,7 @@ async def _show_preview(message: types.Message, state: FSMContext):
         "all": "Barchaga",
         "registered": "Ro'yxatdan o'tganlarga",
         "unregistered": "Ro'yxatdan o'tmaganlarga",
+        "old_registered": "Eski ro'yxatdan o'tganlarga (Holati noma'lum)",
     }
     target_text = target_labels.get(data.get("target", "all"), "Barchaga")
     await message.answer(
@@ -318,6 +373,13 @@ async def execute_broadcast(callback: types.CallbackQuery, state: FSMContext):
             continue
         if target == "registered" and user_state != state_store.REGISTERED:
             continue
+        if target == "old_registered":
+            if user_state != state_store.REGISTERED:
+                continue
+            profile = state_store.get_profile(user_id) or {}
+            school_val = profile.get("school", "")
+            if school_val in ("✅", "❌", "Ha o'qiydi", "Yo'q o'qimaydi"):
+                continue
         try:
             await callback.bot.copy_message(
                 chat_id=user_id,
@@ -643,6 +705,7 @@ def register_admin_handlers(dp: Dispatcher):
     dp.register_message_handler(show_stats, lambda m: m.text == "📊 Statistika", state="*")
     dp.register_message_handler(show_video_stats, lambda m: m.text == "🎬 Video statistika", state="*")
     dp.register_message_handler(show_registered_users, lambda m: m.text == "📋 Ro'yxatdan o'tganlar", state="*")
+    dp.register_message_handler(show_unregistered_users, lambda m: m.text == "⏳ Ro'yxatdan o'tmaganlar", state="*")
     dp.register_message_handler(start_broadcast, lambda m: m.text == "📢 Xabar yuborish", state="*")
     dp.register_message_handler(start_direct_message, lambda m: m.text == "👤 Alohida xabar", state="*")
     dp.register_message_handler(start_delete_user, lambda m: m.text == "🗑 Foydalanuvchini o'chirish", state="*")
@@ -654,10 +717,16 @@ def register_admin_handlers(dp: Dispatcher):
     dp.register_message_handler(get_button, state=BroadcastStates.GET_BUTTON)
     dp.register_callback_query_handler(execute_broadcast, state=BroadcastStates.CONFIRM)
 
-    # Registered list pagination
     dp.register_callback_query_handler(
         registered_pagination,
         lambda c: c.data and (c.data.startswith("reglist_page_") or c.data == "noop"),
+        state="*",
+    )
+    
+    # Unregistered list pagination
+    dp.register_callback_query_handler(
+        unregistered_pagination,
+        lambda c: c.data and c.data.startswith("unreglist_page_"),
         state="*",
     )
 
