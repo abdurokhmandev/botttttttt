@@ -219,14 +219,25 @@ async def registered_pagination(callback: types.CallbackQuery):
 
 # ── Unregistered Users List with Pagination ────────────────────────────────────
 
-def _format_unregistered_page(unreg_ids: list, page: int) -> str:
+async def _format_unregistered_page(bot, unreg_ids: list, page: int) -> str:
     start = page * PAGE_SIZE
     end = min(start + PAGE_SIZE, len(unreg_ids))
     chunk = unreg_ids[start:end]
 
     lines = [f"⏳ <b>Ro'yxatdan o'tmaganlar ({start + 1}–{end} / {len(unreg_ids)}):</b>\n"]
     for i, uid in enumerate(chunk, start + 1):
-        lines.append(f"<b>{i}.</b> 🆔 <code>{uid}</code>")
+        name = "Noma'lum"
+        try:
+            chat = await bot.get_chat(uid)
+            name = chat.first_name or name
+            if chat.last_name:
+                name += f" {chat.last_name}"
+            if chat.username:
+                name += f" (@{chat.username})"
+        except Exception:
+            pass
+        
+        lines.append(f"<b>{i}.</b> 👤 <a href='tg://user?id={uid}'>{name}</a>\n   🆔 <code>{uid}</code>\n")
     return "\n".join(lines)
 
 async def show_unregistered_users(message: types.Message):
@@ -241,7 +252,7 @@ async def show_unregistered_users(message: types.Message):
         return
         
     total_pages = max(1, (len(unreg_ids) + PAGE_SIZE - 1) // PAGE_SIZE)
-    text = _format_unregistered_page(unreg_ids, 0)
+    text = await _format_unregistered_page(message.bot, unreg_ids, 0)
     markup = _pagination_keyboard(0, total_pages, "unreglist") if total_pages > 1 else None
     await message.answer(text, parse_mode="HTML", reply_markup=markup)
 
@@ -260,7 +271,7 @@ async def unregistered_pagination(callback: types.CallbackQuery):
     total_pages = max(1, (len(unreg_ids) + PAGE_SIZE - 1) // PAGE_SIZE)
     page = max(0, min(page, total_pages - 1))
 
-    text = _format_unregistered_page(unreg_ids, page)
+    text = await _format_unregistered_page(callback.bot, unreg_ids, page)
     markup = _pagination_keyboard(page, total_pages, "unreglist")
     try:
         await callback.message.edit_text(text, parse_mode="HTML", reply_markup=markup)
