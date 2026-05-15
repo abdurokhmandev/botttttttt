@@ -19,7 +19,12 @@ PAGE_SIZE = 10  # Sahifada nechta user ko'rsatilsin
 class BroadcastStates(StatesGroup):
     SELECT_AUDIENCE = State()
     GET_CONTENT = State()
-    GET_BUTTON = State()
+    CONTENT_MENU = State()       # Xabar yozilgandan keyin menyu
+    SELECT_BTN_TYPE = State()    # Tugma turi: URL / Yashirin / Reaktsiya
+    SELECT_BTN_COLOR = State()   # Tugma rangi
+    GET_BTN_TEXT_URL = State()   # URL tugma: matn | url
+    GET_HIDDEN_BTN = State()     # Yashirin tugma matn
+    GET_REACTION_BTN = State()   # Reaktsiya tugma emoji
     CONFIRM = State()
 
 class DirectMessageStates(StatesGroup):
@@ -57,6 +62,44 @@ def _confirm_keyboard():
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="✅ Tasdiqlash", callback_data="confirm_broadcast")],
         [InlineKeyboardButton(text="❌ Bekor qilish", callback_data="cancel_broadcast")],
+    ])
+
+def _content_menu_keyboard():
+    """Xabar yozilgandan keyin chiqadigan menyu (2-rasm)."""
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="📝 Matn tahrirlash", callback_data="cm_edit_text"),
+            InlineKeyboardButton(text="🖼 Rasm tahrirlash", callback_data="cm_edit_photo"),
+        ],
+        [
+            InlineKeyboardButton(text="🚀 E'lon qilish", callback_data="cm_publish"),
+            InlineKeyboardButton(text="⏰ Rejalashtirish", callback_data="cm_schedule"),
+        ],
+        [InlineKeyboardButton(text="➕ Tugma Qo'shish", callback_data="cm_add_button")],
+        [InlineKeyboardButton(text="🚫 Bekor qilish", callback_data="cancel_broadcast")],
+    ])
+
+def _btn_type_keyboard():
+    """Tugma turini tanlash (3-rasm)."""
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🔗 URL Tugma", callback_data="btntype_url")],
+        [InlineKeyboardButton(text="🙈 Yashirin Tugma", callback_data="btntype_hidden")],
+        [InlineKeyboardButton(text="👍 Reaktsiya Tugma", callback_data="btntype_reaction")],
+        [InlineKeyboardButton(text="◀️ Orqaga", callback_data="btntype_back")],
+    ])
+
+def _btn_color_keyboard():
+    """Tugma rangini tanlash (1-rasm)."""
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="⬜ Rangsiz (standart)", callback_data="btncolor_default"),
+            InlineKeyboardButton(text="🟢 Yashil (success)", callback_data="btncolor_success"),
+        ],
+        [
+            InlineKeyboardButton(text="🔴 Qizil (danger)", callback_data="btncolor_danger"),
+            InlineKeyboardButton(text="🔵 Ko'k (primary)", callback_data="btncolor_primary"),
+        ],
+        [InlineKeyboardButton(text="◀️ Orqaga", callback_data="btncolor_back")],
     ])
 
 def _pagination_keyboard(page: int, total_pages: int, prefix: str) -> InlineKeyboardMarkup:
@@ -306,26 +349,165 @@ async def set_target(callback: types.CallbackQuery, state: FSMContext):
 
 
 async def get_content(message: types.Message, state: FSMContext):
+    """Xabar qabul qilindi — content menyu ko'rsatiladi (2-rasm)."""
     await state.update_data(message_id=message.message_id, chat_id=message.chat.id)
-    await BroadcastStates.GET_BUTTON.set()
-    markup = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="⏭ Tugmasiz yuborish", callback_data="skip_button")]
-    ])
+    await BroadcastStates.CONTENT_MENU.set()
+    # Preview ko'rsatamiz
+    await message.answer("👀 <b>Xabar ko'rinishi:</b>", parse_mode="HTML")
+    await message.bot.copy_message(
+        chat_id=message.chat.id,
+        from_chat_id=message.chat.id,
+        message_id=message.message_id,
+    )
     await message.answer(
-        "🔗 Tugma qo'shishni xohlaysizmi?\n\n"
-        "Format: <code>Tugma matni | Link</code>\n"
-        "Masalan: <code>Bizning kanal | https://t.me/...</code>",
+        "⚙️ <b>Tugma Qo'shish</b> — quyidagi amallardan birini tanlang:",
         parse_mode="HTML",
-        reply_markup=markup
+        reply_markup=_content_menu_keyboard()
     )
 
 
-async def get_button(message: types.Message, state: FSMContext):
-    if "|" not in message.text:
-        await message.answer("❌ Noto'g'ri format. Qaytadan urinib ko'ring yoki pastdagi tugmani bosing.")
+async def content_menu_handler(callback: types.CallbackQuery, state: FSMContext):
+    """Content menyusidan tanlov (2-rasm tugmalari)."""
+    if callback.data == "cancel_broadcast":
+        await state.finish()
+        await callback.message.edit_text("❌ Bekor qilindi.")
         return
-    text, url = message.text.split("|", 1)
-    await state.update_data(btn_text=text.strip(), btn_url=url.strip())
+
+    if callback.data == "cm_publish":
+        # To'g'ridan-to'g'ri tasdiqlashga o'tish
+        await BroadcastStates.CONFIRM.set()
+        await callback.message.edit_text("✅ Xabarni yuborishga tayyormisiz?", reply_markup=_confirm_keyboard())
+        return
+
+    if callback.data == "cm_schedule":
+        await callback.answer("⏰ Rejalashtirish hozircha mavjud emas.", show_alert=True)
+        return
+
+    if callback.data == "cm_edit_text":
+        await callback.answer()
+        await BroadcastStates.GET_CONTENT.set()
+        await callback.message.edit_text("📝 Yangi matn yuboring:")
+        return
+
+    if callback.data == "cm_edit_photo":
+        await callback.answer()
+        await BroadcastStates.GET_CONTENT.set()
+        await callback.message.edit_text("🖼 Yangi rasm yuboring:")
+        return
+
+    if callback.data == "cm_add_button":
+        # Tugma turi tanlash (3-rasm)
+        await BroadcastStates.SELECT_BTN_TYPE.set()
+        await callback.message.edit_text(
+            "🔘 <b>Tugma turini tanlang:</b>",
+            parse_mode="HTML",
+            reply_markup=_btn_type_keyboard()
+        )
+        return
+
+    await callback.answer()
+
+
+async def btn_type_handler(callback: types.CallbackQuery, state: FSMContext):
+    """Tugma turi tanlandi (3-rasm)."""
+    if callback.data == "cancel_broadcast":
+        await state.finish()
+        await callback.message.edit_text("❌ Bekor qilindi.")
+        return
+
+    if callback.data == "btntype_back":
+        await BroadcastStates.CONTENT_MENU.set()
+        await callback.message.edit_text(
+            "⚙️ <b>Tugma Qo'shish</b> — quyidagi amallardan birini tanlang:",
+            parse_mode="HTML",
+            reply_markup=_content_menu_keyboard()
+        )
+        return
+
+    await state.update_data(btn_type=callback.data)  # btntype_url / btntype_hidden / btntype_reaction
+
+    if callback.data == "btntype_url":
+        # Avval rang tanlash (1-rasm)
+        await BroadcastStates.SELECT_BTN_COLOR.set()
+        await callback.message.edit_text(
+            "🎨 <b>Tugma rangini tanlang:</b>",
+            parse_mode="HTML",
+            reply_markup=_btn_color_keyboard()
+        )
+    elif callback.data == "btntype_hidden":
+        await BroadcastStates.SELECT_BTN_COLOR.set()
+        await callback.message.edit_text(
+            "🎨 <b>Tugma rangini tanlang:</b>",
+            parse_mode="HTML",
+            reply_markup=_btn_color_keyboard()
+        )
+    elif callback.data == "btntype_reaction":
+        await BroadcastStates.GET_REACTION_BTN.set()
+        await callback.message.edit_text(
+            "👍 Reaktsiya tugmasi uchun emoji yuboring:\n"
+            "Masalan: 👍 yoki ❤️"
+        )
+
+
+async def btn_color_handler(callback: types.CallbackQuery, state: FSMContext):
+    """Tugma rangi tanlandi (1-rasm)."""
+    if callback.data == "btncolor_back":
+        await BroadcastStates.SELECT_BTN_TYPE.set()
+        await callback.message.edit_text(
+            "🔘 <b>Tugma turini tanlang:</b>",
+            parse_mode="HTML",
+            reply_markup=_btn_type_keyboard()
+        )
+        return
+
+    color_map = {
+        "btncolor_default": "default",
+        "btncolor_success": "success",
+        "btncolor_danger": "danger",
+        "btncolor_primary": "primary",
+    }
+    await state.update_data(btn_color=color_map.get(callback.data, "default"))
+
+    data = await state.get_data()
+    btn_type = data.get("btn_type", "btntype_url")
+
+    if btn_type == "btntype_url":
+        await BroadcastStates.GET_BTN_TEXT_URL.set()
+        await callback.message.edit_text(
+            "🔗 URL tugma uchun matn va havolani yuboring:\n\n"
+            "Format: <code>Tugma matni | https://t.me/...</code>",
+            parse_mode="HTML"
+        )
+    elif btn_type == "btntype_hidden":
+        await BroadcastStates.GET_HIDDEN_BTN.set()
+        await callback.message.edit_text(
+            "🙈 Yashirin tugma matni uchun callback_data yuboring:\n"
+            "Masalan: <code>hidden_action_1</code>",
+            parse_mode="HTML"
+        )
+
+
+async def get_btn_text_url(message: types.Message, state: FSMContext):
+    """URL tugma: matn | url qabul qilindi."""
+    if "|" not in message.text:
+        await message.answer("❌ Noto'g'ri format. Masalan: <code>Kanal | https://t.me/kanal</code>", parse_mode="HTML")
+        return
+    text_part, url_part = message.text.split("|", 1)
+    await state.update_data(btn_text=text_part.strip(), btn_url=url_part.strip())
+    await BroadcastStates.CONFIRM.set()
+    await _show_preview(message, state)
+
+
+async def get_hidden_btn(message: types.Message, state: FSMContext):
+    """Yashirin tugma callback_data qabul qilindi."""
+    await state.update_data(btn_text=message.text.strip(), btn_url=None, btn_hidden=True)
+    await BroadcastStates.CONFIRM.set()
+    await _show_preview(message, state)
+
+
+async def get_reaction_btn(message: types.Message, state: FSMContext):
+    """Reaktsiya tugma emoji qabul qilindi."""
+    await state.update_data(btn_text=message.text.strip(), btn_url=None, btn_reaction=True)
     await BroadcastStates.CONFIRM.set()
     await _show_preview(message, state)
 
@@ -727,8 +909,18 @@ def register_admin_handlers(dp: Dispatcher):
     # Broadcast FSM
     dp.register_callback_query_handler(set_target, state=BroadcastStates.SELECT_AUDIENCE)
     dp.register_message_handler(get_content, content_types=types.ContentType.ANY, state=BroadcastStates.GET_CONTENT)
-    dp.register_callback_query_handler(skip_button, lambda c: c.data == "skip_button", state=BroadcastStates.GET_BUTTON)
-    dp.register_message_handler(get_button, state=BroadcastStates.GET_BUTTON)
+    # Content menu (2-rasm)
+    dp.register_callback_query_handler(content_menu_handler, state=BroadcastStates.CONTENT_MENU)
+    # Tugma turi (3-rasm)
+    dp.register_callback_query_handler(btn_type_handler, state=BroadcastStates.SELECT_BTN_TYPE)
+    # Tugma rangi (1-rasm)
+    dp.register_callback_query_handler(btn_color_handler, state=BroadcastStates.SELECT_BTN_COLOR)
+    # URL tugma matn|url
+    dp.register_message_handler(get_btn_text_url, state=BroadcastStates.GET_BTN_TEXT_URL)
+    # Yashirin tugma
+    dp.register_message_handler(get_hidden_btn, state=BroadcastStates.GET_HIDDEN_BTN)
+    # Reaktsiya tugma
+    dp.register_message_handler(get_reaction_btn, state=BroadcastStates.GET_REACTION_BTN)
     dp.register_callback_query_handler(execute_broadcast, state=BroadcastStates.CONFIRM)
 
     dp.register_callback_query_handler(
