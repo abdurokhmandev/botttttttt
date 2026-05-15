@@ -78,5 +78,19 @@ for key, value in os.environ.items():
             VIDEOS[index] = {}
         VIDEOS[index][field] = value.replace("\\n", "\n")
 
+# ── Podcasts ──────────────────────────────────────────────────────────────────
+# Format: { index: { "title": str, "description": str, "audio": file_id_or_url, "url": str } }
+PODCASTS: dict[int, dict] = {}
+
+_podcast_pattern = re.compile(r"^PODCAST_(\d+)_(TITLE|DESCRIPTION|AUDIO|URL)$", re.IGNORECASE)
+for key, value in os.environ.items():
+    match = _podcast_pattern.match(key)
+    if match:
+        index = int(match.group(1))
+        field = match.group(2).lower()
+        if index not in PODCASTS:
+            PODCASTS[index] = {}
+        PODCASTS[index][field] = value.replace("\\n", "\n")
+
 CREDENTIALS_PATH = os.path.join(BASE_DIR, "credentials.json")
 STATE_FILE_PATH = os.path.join(BASE_DIR, "data", "state.json")

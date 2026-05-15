@@ -12,6 +12,7 @@ from handlers.videos import register_video_handlers
 from handlers.school import register_school_handler
 from handlers.admin import register_admin_handlers
 from handlers.admin_api import admin_stats_api_handler
+from handlers.podcasts import register_podcast_handlers
 from services.reminder import check_reminders
 
 import os
@@ -34,6 +35,7 @@ register_webapp_handler(dp)   # WebApp data — eng birinchi (state='*' bilan)
 register_start_handler(dp)
 register_video_handlers(dp)
 register_school_handler(dp)
+register_podcast_handlers(dp)
 register_admin_handlers(dp)
 
 
