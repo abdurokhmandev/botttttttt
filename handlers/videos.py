@@ -120,20 +120,8 @@ async def handle_video_callback(callback: types.CallbackQuery) -> None:
     await callback.message.answer(caption, parse_mode="HTML", reply_markup=markup)
 
 
-async def handle_podcasts_text(message: types.Message) -> None:
-    from handlers.webapp import _build_video_menu, _video_list_text
-    await message.answer(
-        text=(
-            "🎧 Qaysi darsni tinglamoqchisiz?\n\n"
-            f"{_video_list_text()}"
-        ),
-        reply_markup=_build_video_menu(),
-    )
-
-
 def register_video_handlers(dp: Dispatcher) -> None:
     dp.register_callback_query_handler(
         handle_video_callback,
         lambda c: c.data and c.data.startswith("video_"),
     )
-    dp.register_message_handler(handle_podcasts_text, text="📹 Rahimov Suhbatlari")

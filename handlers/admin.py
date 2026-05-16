@@ -44,6 +44,7 @@ def _admin_main_keyboard():
             [KeyboardButton("📢 Xabar yuborish"), KeyboardButton("👤 Alohida xabar")],
             [KeyboardButton("📊 Statistika"), KeyboardButton("🎬 Video statistika")],
             [KeyboardButton("📋 Ro'yxatdan o'tganlar"), KeyboardButton("⏳ Ro'yxatdan o'tmaganlar")],
+            [KeyboardButton("📹 Suhbat qo'shish")],
             [KeyboardButton("🗑 Foydalanuvchini o'chirish")],
         ],
         resize_keyboard=True

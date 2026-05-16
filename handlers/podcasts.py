@@ -7,41 +7,54 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 from config import ADMIN_IDS, PODCASTS
 
+from storage.podcast_store import save_podcast
+
 logger = logging.getLogger(__name__)
 
 # ── FSM ───────────────────────────────────────────────────────────────────────
 
 class AddPodcastStates(StatesGroup):
-    GET_AUDIO    = State()   # Audio fayl yoki URL
+    GET_FILE     = State()   # Audio, Video yoki URL
     GET_TITLE    = State()   # Sarlavha
-    GET_DESC     = State()   # Tavsif (ixtiyoriy)
     GET_URL      = State()   # Tashqi havola (ixtiyoriy)
+    GET_DESC     = State()   # Tavsif (ixtiyoriy)
     CONFIRM      = State()   # Tasdiqlash
 
 # ── Keyboards ─────────────────────────────────────────────────────────────────
 
+def _podcast_list_text() -> str:
+    """Suhbatlar ro'yxati matni."""
+    if not PODCASTS:
+        return "📹 Hozircha suhbatlar mavjud emas."
+    lines = []
+    for idx in sorted(PODCASTS.keys()):
+        title = PODCASTS[idx].get("title", f"Suhbat {idx}")
+        lines.append(f"<b>{idx}.</b> {title}")
+    return "\n".join(lines)
+
+
 def _podcast_list_keyboard() -> InlineKeyboardMarkup:
-    """Barcha podcastlar ro'yxati."""
+    """Suhbatlar uchun raqamli tugmalar."""
     if not PODCASTS:
         return InlineKeyboardMarkup(inline_keyboard=[])
-    rows = []
+    
+    buttons = []
     for idx in sorted(PODCASTS.keys()):
-        title = PODCASTS[idx].get("title", f"Podcast {idx}")
-        rows.append([InlineKeyboardButton(
-            text=f"🎙 {idx}. {title[:40]}",
-            callback_data=f"podcast_{idx}"
-        )])
+        buttons.append(InlineKeyboardButton(text=str(idx), callback_data=f"podcast_{idx}"))
+    
+    # Har bir qatorda 5 tadan tugma
+    rows = [buttons[i:i + 5] for i in range(0, len(buttons), 5)]
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
 def _podcast_action_keyboard(idx: int) -> InlineKeyboardMarkup:
-    """Podcast yuborilgandan keyin chiqadigan tugmalar."""
+    """Suhbat yuborilgandan keyin chiqadigan tugmalar."""
     rows = []
     url = PODCASTS.get(idx, {}).get("url", "").strip()
     if url:
         rows.append([InlineKeyboardButton(text="🔗 To'liq ko'rish", url=url)])
     rows.append([InlineKeyboardButton(text="🏫 Rahimov School", callback_data="school_info")])
-    rows.append([InlineKeyboardButton(text="◀️ Podcastlar ro'yxati", callback_data="podcasts_back_list")])
+    rows.append([InlineKeyboardButton(text="◀️ Suhbatlar ro'yxati", callback_data="podcasts_back_list")])
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
@@ -54,27 +67,32 @@ def _confirm_add_keyboard() -> InlineKeyboardMarkup:
 # ── User Handlers ─────────────────────────────────────────────────────────────
 
 async def show_podcast_list(message: types.Message) -> None:
-    """Foydalanuvchi 🎧 Podcastlar tugmasini bosganida."""
+    """Foydalanuvchi 📹 Rahimov Suhbatlari tugmasini bosganida."""
     if not PODCASTS:
-        await message.answer("🎙 Hozircha podcastlar mavjud emas. Tez orada qo'shiladi!")
+        await message.answer("📹 Hozircha suhbatlar mavjud emas. Tez orada qo'shiladi!")
         return
+    
+    text = (
+        "🎧 <b>Qaysi darsni tinglamoqchisiz?</b>\n\n"
+        f"{_podcast_list_text()}"
+    )
     await message.answer(
-        "🎙 <b>Podcastlar ro'yxati</b>\n\nQaysi podcastni tinglamoqchisiz?",
+        text,
         parse_mode="HTML",
         reply_markup=_podcast_list_keyboard()
     )
 
 
 async def handle_podcast_callback(callback: types.CallbackQuery) -> None:
-    """Podcast tanlanganda audio yuborish + avtomatik tugmalar."""
+    """Suhbat tanlanganda audio/video yuborish + avtomatik tugmalar."""
     await callback.answer()
 
     if callback.data == "podcasts_back_list":
         if not PODCASTS:
-            await callback.message.edit_text("🎙 Hozircha podcastlar mavjud emas.")
+            await callback.message.edit_text("📹 Hozircha suhbatlar mavjud emas.")
             return
         await callback.message.edit_text(
-            "🎙 <b>Podcastlar ro'yxati</b>\n\nQaysi podcastni tinglamoqchisiz?",
+            "📹 <b>Rahimov Suhbatlari</b>\n\nQaysi suhbatni tinglamoqchisiz?",
             parse_mode="HTML",
             reply_markup=_podcast_list_keyboard()
         )
@@ -87,108 +105,126 @@ async def handle_podcast_callback(callback: types.CallbackQuery) -> None:
 
     data = PODCASTS.get(idx)
     if not data:
-        await callback.message.answer("⚠️ Podcast topilmadi.")
+        await callback.message.answer("⚠️ Suhbat topilmadi.")
         return
 
-    title       = data.get("title", f"Podcast {idx}")
+    title       = data.get("title", f"Suhbat {idx}")
     description = data.get("description", "")
-    audio       = data.get("audio", "").strip()
+    file_id     = data.get("audio", "").strip()
+    file_type   = data.get("type", "audio") # audio yoki video
     markup      = _podcast_action_keyboard(idx)
 
-    caption = f"<b>🎙 {title}</b>"
+    caption = f"<b>📹 {title}</b>"
     if description:
         caption += f"\n\n{description}"
-    caption += "\n\n🏫 Rahimov School podcastlari"
+    caption += "\n\n🏫 Rahimov School suhbatlari"
 
-    if audio:
+    if file_id:
         try:
-            await callback.message.answer_audio(
-                audio=audio,
-                caption=caption,
-                parse_mode="HTML",
-                reply_markup=markup,
-                title=title,
-                performer="Rahimov School"
-            )
+            if file_type == "video":
+                await callback.message.answer_video(
+                    video=file_id,
+                    caption=caption,
+                    parse_mode="HTML",
+                    reply_markup=markup
+                )
+            else:
+                await callback.message.answer_audio(
+                    audio=file_id,
+                    caption=caption,
+                    parse_mode="HTML",
+                    reply_markup=markup,
+                    title=title,
+                    performer="Rahimov School"
+                )
             return
         except Exception as e:
-            logger.error("Podcast audio yuborishda xatolik (idx=%d): %s", idx, e)
+            logger.error("Suhbat yuborishda xatolik (idx=%d, type=%s): %s", idx, file_type, e)
+            # Agar audio deb xato bersa, video qilib ko'ramiz (fallback)
+            try:
+                await callback.message.answer_video(video=file_id, caption=caption, parse_mode="HTML", reply_markup=markup)
+                return
+            except:
+                pass
 
-    # Audio yo'q bo'lsa — faqat matn
+    # Faqat matn
     await callback.message.answer(caption, parse_mode="HTML", reply_markup=markup)
 
 
-# ── Admin: Podcast qo'shish ───────────────────────────────────────────────────
+# ── Admin: Suhbat qo'shish ───────────────────────────────────────────────────
 
 async def admin_add_podcast(message: types.Message, state: FSMContext):
-    """Admin /addpodcast yoki tugma orqali podcast qo'shadi."""
+    """Admin /addpodcast yoki tugma orqali suhbat qo'shadi."""
     if message.from_user.id not in ADMIN_IDS:
         return
-    await AddPodcastStates.GET_AUDIO.set()
+    await AddPodcastStates.GET_FILE.set()
     await message.answer(
-        "🎙 <b>Yangi podcast qo'shish</b>\n\n"
-        "1️⃣ Audio faylni yuboring (yoki URL kiriting):",
+        "📹 <b>Yangi suhbat qo'shish</b>\n\n"
+        "1️⃣ Suhbat <b>video</b> yoki <b>audio</b> faylini yuboring:",
         parse_mode="HTML"
     )
 
 
-async def ap_get_audio(message: types.Message, state: FSMContext):
-    """Audio qabul qilindi."""
-    if message.audio:
-        # Telegram audio file_id saqlaymiz
-        file_id = message.audio.file_id
-        await state.update_data(audio=file_id)
+async def ap_get_file(message: types.Message, state: FSMContext):
+    """Fayl qabul qilindi."""
+    if message.video:
+        await state.update_data(audio=message.video.file_id, type="video")
+    elif message.audio:
+        await state.update_data(audio=message.audio.file_id, type="audio")
+    elif message.document and message.document.mime_type.startswith("video/"):
+        await state.update_data(audio=message.document.file_id, type="video")
     elif message.text and (message.text.startswith("http://") or message.text.startswith("https://")):
-        await state.update_data(audio=message.text.strip())
+        await state.update_data(audio=message.text.strip(), type="audio")
     else:
-        await message.answer("❌ Audio fayl yoki URL yuboring.")
+        await message.answer("❌ Iltimos, video yoki audio fayl yuboring.")
         return
 
     await AddPodcastStates.GET_TITLE.set()
-    await message.answer("2️⃣ Podcast sarlavhasini kiriting:")
+    await message.answer("2️⃣ Suhbat <b>nomini</b> kiriting:", parse_mode="HTML")
 
 
 async def ap_get_title(message: types.Message, state: FSMContext):
     """Sarlavha qabul qilindi."""
     await state.update_data(title=message.text.strip())
-    await AddPodcastStates.GET_DESC.set()
-    await message.answer(
-        "3️⃣ Tavsif kiriting (ixtiyoriy):\n"
-        "<i>O'tkazib yuborish uchun — kiritmang, /skip yozing</i>",
-        parse_mode="HTML"
-    )
-
-
-async def ap_get_desc(message: types.Message, state: FSMContext):
-    """Tavsif qabul qilindi."""
-    if message.text and message.text.strip() == "/skip":
-        await state.update_data(description="")
-    else:
-        await state.update_data(description=message.text.strip())
     await AddPodcastStates.GET_URL.set()
     await message.answer(
-        "4️⃣ Tashqi havola (YouTube, Spotify va h.k.) kiriting (ixtiyoriy):\n"
+        "3️⃣ Suhbat uchun <b>havola (link)</b> kiriting (ixtiyoriy):\n"
         "<i>O'tkazib yuborish uchun — /skip yozing</i>",
         parse_mode="HTML"
     )
 
 
 async def ap_get_url(message: types.Message, state: FSMContext):
-    """URL qabul qilindi — tasdiqlash."""
+    """URL qabul qilindi."""
     if message.text and message.text.strip() == "/skip":
         await state.update_data(url="")
     else:
         await state.update_data(url=message.text.strip())
+    
+    await AddPodcastStates.GET_DESC.set()
+    await message.answer(
+        "4️⃣ Suhbat <b>tavsifini</b> kiriting (ixtiyoriy):\n"
+        "<i>O'tkazib yuborish uchun — /skip yozing</i>",
+        parse_mode="HTML"
+    )
+
+
+async def ap_get_desc(message: types.Message, state: FSMContext):
+    """Tavsif qabul qilindi — tasdiqlash."""
+    if message.text and message.text.strip() == "/skip":
+        await state.update_data(description="")
+    else:
+        await state.update_data(description=message.text.strip())
 
     data = await state.get_data()
-    idx  = max(PODCASTS.keys(), default=0) + 1  # Keyingi index
+    idx  = max(PODCASTS.keys(), default=0) + 1
 
     preview = (
-        f"✅ <b>Podcast #{idx}</b>\n\n"
-        f"🎙 Sarlavha: <b>{data.get('title', '—')}</b>\n"
+        f"✅ <b>Yangi Suhbat #{idx}</b>\n\n"
+        f"📹 Nomi: <b>{data.get('title', '—')}</b>\n"
+        f"🔗 Havola: {data.get('url', '—') or '—'}\n"
         f"📝 Tavsif: {data.get('description', '—') or '—'}\n"
-        f"🔗 URL: {data.get('url', '—') or '—'}\n"
-        f"📁 Audio: <code>{data.get('audio', '—')[:50]}...</code>\n\n"
+        f"📁 Fayl turi: <b>{data.get('type', 'audio')}</b>\n\n"
         "Qo'shilsinmi?"
     )
     await state.update_data(new_index=idx)
@@ -197,7 +233,7 @@ async def ap_get_url(message: types.Message, state: FSMContext):
 
 
 async def ap_confirm(callback: types.CallbackQuery, state: FSMContext):
-    """Podcast qo'shish tasdiqlandi."""
+    """Suhbat qo'shish tasdiqlandi."""
     if callback.data == "podcast_add_cancel":
         await state.finish()
         await callback.message.edit_text("❌ Bekor qilindi.")
@@ -206,32 +242,38 @@ async def ap_confirm(callback: types.CallbackQuery, state: FSMContext):
     data = await state.get_data()
     idx  = data.get("new_index", max(PODCASTS.keys(), default=0) + 1)
 
-    # PODCASTS dict ga qo'shamiz (RAM ichida — bot restart bo'lsa qaytadi)
-    PODCASTS[idx] = {
+    podcast_data = {
         "title":       data.get("title", ""),
         "description": data.get("description", ""),
         "audio":       data.get("audio", ""),
         "url":         data.get("url", ""),
+        "type":        data.get("type", "audio"),
     }
+    
+    # Doimiy xotiraga saqlash
+    save_podcast(idx, podcast_data)
+    
+    # RAM dagi dict ni yangilash
+    PODCASTS[idx] = podcast_data
 
     await state.finish()
 
-    # Env variable ko'rinishida chiqaramiz (Railway ga qo'yish uchun)
+    # Env variable ko'rinishida chiqaramiz
     env_hint = (
         f"\n\n📋 <b>Railway ENV uchun:</b>\n"
-        f"<code>PODCAST_{idx}_TITLE={data.get('title', '')}</code>\n"
-        f"<code>PODCAST_{idx}_AUDIO={data.get('audio', '')}</code>"
+        f"<code>PODCAST_{idx}_TITLE={podcast_data['title']}</code>\n"
+        f"<code>PODCAST_{idx}_AUDIO={podcast_data['audio']}</code>"
     )
-    if data.get("description"):
-        env_hint += f"\n<code>PODCAST_{idx}_DESCRIPTION={data.get('description', '')}</code>"
-    if data.get("url"):
-        env_hint += f"\n<code>PODCAST_{idx}_URL={data.get('url', '')}</code>"
+    if podcast_data.get("description"):
+        env_hint += f"\n<code>PODCAST_{idx}_DESCRIPTION={podcast_data['description']}</code>"
+    if podcast_data.get("url"):
+        env_hint += f"\n<code>PODCAST_{idx}_URL={podcast_data['url']}</code>"
 
     await callback.message.edit_text(
-        f"✅ <b>Podcast #{idx} qo'shildi!</b>\n"
-        f"🎙 <b>{data.get('title', '')}</b>\n"
+        f"✅ <b>Suhbat #{idx} muvaffaqiyatli qo'shildi!</b>\n"
+        f"📹 <b>{podcast_data['title']}</b>\n"
         f"{env_hint}\n\n"
-        "⚠️ Bot qayta ishga tushirilsa, yuqoridagi ENV o'zgaruvchilarini Railway ga qo'shing!",
+        "💡 Suhbat doimiy saqlab qolindi. Railway ENV'ga qo'shib qo'yish tavsiya etiladi.",
         parse_mode="HTML"
     )
 
@@ -239,18 +281,19 @@ async def ap_confirm(callback: types.CallbackQuery, state: FSMContext):
 
 def register_podcast_handlers(dp: Dispatcher) -> None:
     # Foydalanuvchi
-    dp.register_message_handler(show_podcast_list, text="🎙 Podcastlar")
+    dp.register_message_handler(show_podcast_list, text="📹 Rahimov Suhbatlari")
     dp.register_callback_query_handler(
         handle_podcast_callback,
         lambda c: c.data and (c.data.startswith("podcast_") or c.data == "podcasts_back_list"),
     )
 
-    # Admin: podcast qo'shish FSM
-    dp.register_message_handler(admin_add_podcast, commands=["addpodcast"], state="*")
-    dp.register_message_handler(ap_get_audio, content_types=types.ContentType.ANY, state=AddPodcastStates.GET_AUDIO)
+    # Admin: suhbat qo'shish FSM
+    dp.register_message_handler(admin_add_podcast, commands=["addsuhbat"], state="*")
+    dp.register_message_handler(admin_add_podcast, text="📹 Suhbat qo'shish", state="*")
+    dp.register_message_handler(ap_get_file, content_types=types.ContentType.ANY, state=AddPodcastStates.GET_FILE)
     dp.register_message_handler(ap_get_title, state=AddPodcastStates.GET_TITLE)
-    dp.register_message_handler(ap_get_desc,  state=AddPodcastStates.GET_DESC)
     dp.register_message_handler(ap_get_url,   state=AddPodcastStates.GET_URL)
+    dp.register_message_handler(ap_get_desc,  state=AddPodcastStates.GET_DESC)
     dp.register_callback_query_handler(
         ap_confirm,
         lambda c: c.data in ("podcast_add_confirm", "podcast_add_cancel"),

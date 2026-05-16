@@ -80,7 +80,8 @@ for key, value in os.environ.items():
 
 # ── Podcasts ──────────────────────────────────────────────────────────────────
 # Format: { index: { "title": str, "description": str, "audio": file_id_or_url, "url": str } }
-PODCASTS: dict[int, dict] = {}
+from storage.podcast_store import get_all_podcasts
+PODCASTS: dict[int, dict] = get_all_podcasts()
 
 _podcast_pattern = re.compile(r"^PODCAST_(\d+)_(TITLE|DESCRIPTION|AUDIO|URL)$", re.IGNORECASE)
 for key, value in os.environ.items():
