@@ -79,9 +79,20 @@ for key, value in os.environ.items():
         VIDEOS[index][field] = value.replace("\\n", "\n")
 
 # ── Podcasts ──────────────────────────────────────────────────────────────────
-# Format: { index: { "title": str, "description": str, "audio": file_id_or_url, "url": str } }
+# Format: { index: { "title": str, "description": str, "audio": file_id_or_url, "url": str, "type": str } }
 from storage.podcast_store import get_all_podcasts
 PODCASTS: dict[int, dict] = get_all_podcasts()
+
+# Avval config dagi VIDEOS ni suhbatlar ro'yxatiga qo'shamiz (agar u yerda bo'lmasa)
+for idx, v_data in VIDEOS.items():
+    if idx not in PODCASTS:
+        PODCASTS[idx] = {
+            "title": v_data.get("title", ""),
+            "description": v_data.get("description", ""),
+            "audio": v_data.get("video", ""),
+            "url": v_data.get("url", ""),
+            "type": "video"
+        }
 
 _podcast_pattern = re.compile(r"^PODCAST_(\d+)_(TITLE|DESCRIPTION|AUDIO|URL)$", re.IGNORECASE)
 for key, value in os.environ.items():
@@ -91,7 +102,11 @@ for key, value in os.environ.items():
         field = match.group(2).lower()
         if index not in PODCASTS:
             PODCASTS[index] = {}
-        PODCASTS[index][field] = value.replace("\\n", "\n")
+        # ENV dan kelgan AUDIO ni audio field ga yozamiz
+        f_name = "audio" if field == "audio" else field
+        PODCASTS[index][f_name] = value.replace("\\n", "\n")
+        if "type" not in PODCASTS[index]:
+            PODCASTS[index]["type"] = "audio"
 
 CREDENTIALS_PATH = os.path.join(BASE_DIR, "credentials.json")
 STATE_FILE_PATH = os.path.join(BASE_DIR, "data", "state.json")
