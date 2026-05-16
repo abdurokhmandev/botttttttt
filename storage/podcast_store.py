@@ -34,4 +34,10 @@ def get_all_podcasts() -> dict[int, dict]:
     with _lock:
         return dict(_podcasts)
 
+def delete_podcast(index: int) -> None:
+    with _lock:
+        if index in _podcasts:
+            del _podcasts[index]
+            _save()
+
 _load()
