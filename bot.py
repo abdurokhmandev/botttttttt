@@ -109,6 +109,7 @@ async def on_startup(dispatcher: Dispatcher) -> None:
     app.router.add_get('/go', serve_redirect)
     app.router.add_get('/webappregister', serve_webappregister)
     app.router.add_get('/admin', serve_admin_page)
+    app.router.add_get('/admin.html', serve_admin_page)
 
     for route in list(app.router.routes()):
         cors.add(route)
