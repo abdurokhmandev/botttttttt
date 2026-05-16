@@ -87,18 +87,41 @@ async def admin_stats_api_handler(request: web.Request, bot: Bot) -> web.Respons
         if not b_id:
             return web.json_response({"ok": False, "error": "Missing broadcast_id"}, status=400)
         
+        # Get history to know the target
+        history = get_history()
+        b_info = next((h for h in history if h['id'] == b_id), None)
+        target = b_info['target'] if b_info else "all"
+
         clicks = get_broadcast_clicks(b_id)
         all_users = await _get_combined_users()
+        
+        # Determine the target user IDs
+        target_ids = []
+        if target == "all": target_ids = list(all_users.keys())
+        elif target == "registered": target_ids = [uid for uid, u in all_users.items() if u.get("state") == state_store.REGISTERED]
+        elif target == "unregistered": target_ids = [uid for uid, u in all_users.items() if u.get("state") != state_store.REGISTERED]
+
         detailed_clicks = []
-        for uid, ts in clicks.items():
+        non_clickers = []
+
+        for uid in target_ids:
             u = all_users.get(int(uid), {})
-            detailed_clicks.append({
-                "user_id": uid,
+            u_info = {
+                "user_id": str(uid),
                 "name": u.get("name", "Noma'lum"),
-                "phone": u.get("phone", "—"),
-                "time": ts
-            })
-        return web.json_response({"ok": True, "clicks": detailed_clicks})
+                "phone": u.get("phone", "—")
+            }
+            if str(uid) in clicks:
+                u_info["time"] = clicks[str(uid)]
+                detailed_clicks.append(u_info)
+            else:
+                non_clickers.append(u_info)
+            
+        return web.json_response({
+            "ok": True, 
+            "clicks": detailed_clicks,
+            "non_clickers": non_clickers
+        })
 
     # --- ACTION: GET STATS ---
     elif action == "stats":

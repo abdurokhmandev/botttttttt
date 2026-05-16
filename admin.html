@@ -173,7 +173,10 @@
             background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);
             display: none; align-items: center; justify-content: center; z-index: 2000;
         }
-        .modal { background: white; padding: 32px; border-radius: var(--radius-lg); width: 100%; max-width: 600px; max-height: 90vh; overflow-y: auto; }
+        .modal { background: white; padding: 32px; border-radius: var(--radius-lg); width: 100%; max-width: 800px; max-height: 90vh; overflow-y: auto; }
+
+        .tab-btn { padding: 8px 16px; cursor: pointer; border-bottom: 2px solid transparent; }
+        .tab-btn.active { border-bottom: 2px solid var(--primary); color: var(--primary); font-weight: 700; }
 
         .hidden { display: none; }
     </style>
@@ -209,9 +212,7 @@
             <!-- Dashboard -->
             <div id="tab-dashboard" class="fade-in">
                 <div class="section-header"><h2>Statistika</h2><button class="btn-primary" style="width:auto; padding:10px 20px;" onclick="fetchData()">Yangilash</button></div>
-                <div class="stats-grid" id="stats-summary">
-                    <!-- Stats will be loaded here -->
-                </div>
+                <div class="stats-grid" id="stats-summary"></div>
                 <div class="card">
                     <div class="card-title">Oxirgi Ro'yxatdan O'tganlar</div>
                     <table><thead><tr><th>Ism Familiya</th><th>Telefon</th><th>Hudud</th><th>Sinf</th></tr></thead><tbody id="table-users"></tbody></table>
@@ -230,7 +231,7 @@
                 <div class="broadcast-grid">
                     <div class="card">
                         <div class="card-title">Yangi xabar</div>
-                        <div class="form-group"><label>Xabar matni (HTML)</label><textarea class="form-control" id="bc-text" placeholder="Xabarni kiriting..."></textarea></div>
+                        <div class="form-group"><label>Xabar matni (HTML)</label><textarea class="form-control" id="bc-text" style="height:150px;"></textarea></div>
                         <div class="form-group">
                             <label>Kimga yuborilsin?</label>
                             <select class="form-control" id="bc-target">
@@ -247,10 +248,8 @@
                         <button class="btn-primary" onclick="sendBroadcast()">Yuborish <i class="fas fa-paper-plane"></i></button>
                     </div>
                     <div class="card">
-                        <div class="card-title">Yuborilgan xabarlar tarixi</div>
-                        <div style="max-height: 500px; overflow-y: auto;">
-                            <table id="table-bc-history"><thead><tr><th>Vaqt</th><th>Target</th><th>Stat</th></tr></thead><tbody></tbody></table>
-                        </div>
+                        <div class="card-title">Yuborilgan xabarlar</div>
+                        <table id="table-bc-history"><thead><tr><th>Vaqt</th><th>Target</th><th>Statistika</th></tr></thead><tbody></tbody></table>
                     </div>
                 </div>
             </div>
@@ -259,7 +258,7 @@
             <div id="tab-settings" class="fade-in hidden">
                 <div class="section-header"><h2>Bot Sozlamalari</h2><button class="btn-primary" style="width:auto; padding:10px 20px;" onclick="saveSettings()">Saqlash</button></div>
                 <div class="card">
-                    <div class="form-group"><label>Maktab haqida</label><textarea class="form-control" id="set-about"></textarea></div>
+                    <div class="form-group"><label>Maktab haqida</label><textarea class="form-control" id="set-about" style="height:200px;"></textarea></div>
                     <div class="form-group"><label>Telefon</label><input type="text" class="form-control" id="set-phone"></div>
                 </div>
             </div>
@@ -269,8 +268,16 @@
     <!-- Modal Stats -->
     <div class="modal-overlay" id="modal-stats">
         <div class="modal">
-            <h3 style="margin-bottom:20px;">Tugmani bosganlar ro'yxati</h3>
-            <table><thead><tr><th>Foydalanuvchi</th><th>Telefon</th><th>Vaqt</th></tr></thead><tbody id="table-click-stats"></tbody></table>
+            <div style="display:flex; gap:20px; border-bottom:1px solid #eee; margin-bottom:20px;">
+                <div class="tab-btn active" id="btn-show-clickers" onclick="switchStatTab('clickers')">Bosganlar (<span id="count-clickers">0</span>)</div>
+                <div class="tab-btn" id="btn-show-nonclickers" onclick="switchStatTab('nonclickers')">Bosmaganlar (<span id="count-nonclickers">0</span>)</div>
+            </div>
+            <div id="stat-list-clickers">
+                <table><thead><tr><th>Ism Familiya</th><th>Telefon</th><th>Vaqt</th></tr></thead><tbody id="tbody-clickers"></tbody></table>
+            </div>
+            <div id="stat-list-nonclickers" class="hidden">
+                <table><thead><tr><th>Ism Familiya</th><th>Telefon</th></tr></thead><tbody id="tbody-nonclickers"></tbody></table>
+            </div>
             <button class="btn-primary" style="margin-top:20px; background:#e2e8f0; color:#1a202c;" onclick="closeModal()">Yopish</button>
         </div>
     </div>
@@ -282,8 +289,7 @@
         async function login() {
             const pass = document.getElementById('password').value;
             const res = await fetch(API, { method:'POST', body: JSON.stringify({ password:pass, action:'stats' }) });
-            const json = await res.json();
-            if(json.ok) { sessionStorage.setItem('pass', pass); init(json.data); } else { alert("Parol xato"); }
+            if(res.ok) { sessionStorage.setItem('pass', pass); init((await res.json()).data); } else { alert("Parol xato"); }
         }
 
         function init(data) {
@@ -299,8 +305,8 @@
                 <div class="card stat-card"><div class="stat-info"><h4>Ro'yxatdan o'tgan</h4><div class="value">${u.registered}</div></div></div>
                 <div class="card stat-card"><div class="stat-info"><h4>O'tmagan</h4><div class="value">${u.unregistered}</div></div></div>
             `;
-            document.getElementById('table-users').innerHTML = data.recent_users.map(user => `
-                <tr><td>${user.name}</td><td>${user.phone}</td><td>${user.district}</td><td>${user.grade}</td></tr>
+            document.getElementById('table-users').innerHTML = data.recent_users.map(u => `
+                <tr><td>${u.name}</td><td>${u.phone}</td><td>${u.district}</td><td>${u.grade}</td></tr>
             `).join('');
         }
 
@@ -324,7 +330,7 @@
             const cont = document.getElementById('bc-buttons');
             cont.innerHTML = bcButtons.map(b => `
                 <div class="btn-item">
-                    <input type="text" class="form-control" placeholder="Tugma nomi" value="${b.text}" onchange="updateBcBtn(${b.id}, 'text', this.value)">
+                    <input type="text" class="form-control" placeholder="Nom" value="${b.text}" onchange="updateBcBtn(${b.id}, 'text', this.value)">
                     <input type="text" class="form-control" placeholder="Link" value="${b.url}" onchange="updateBcBtn(${b.id}, 'url', this.value)">
                     <button onclick="removeBcBtn(${b.id})" style="color:red; background:none; border:none; cursor:pointer;"><i class="fas fa-trash"></i></button>
                 </div>
@@ -361,21 +367,32 @@
             const res = await fetch(API, { method:'POST', body: JSON.stringify({ password: sessionStorage.getItem('pass'), action:'get_click_stats', broadcast_id: id }) });
             const json = await res.json();
             if(json.ok) {
-                document.getElementById('table-click-stats').innerHTML = json.clicks.map(c => `
+                document.getElementById('count-clickers').innerText = json.clicks.length;
+                document.getElementById('count-nonclickers').innerText = json.non_clickers.length;
+                document.getElementById('tbody-clickers').innerHTML = json.clicks.map(c => `
                     <tr><td>${c.name}</td><td>${c.phone}</td><td><small>${c.time}</small></td></tr>
                 `).join('');
+                document.getElementById('tbody-nonclickers').innerHTML = json.non_clickers.map(c => `
+                    <tr><td>${c.name}</td><td>${c.phone}</td></tr>
+                `).join('');
+                switchStatTab('clickers');
                 document.getElementById('modal-stats').style.display = 'flex';
             }
+        }
+
+        function switchStatTab(tab) {
+            document.getElementById('stat-list-clickers').classList.toggle('hidden', tab !== 'clickers');
+            document.getElementById('stat-list-nonclickers').classList.toggle('hidden', tab !== 'nonclickers');
+            document.getElementById('btn-show-clickers').classList.toggle('active', tab === 'clickers');
+            document.getElementById('btn-show-nonclickers').classList.toggle('active', tab === 'nonclickers');
         }
 
         function closeModal() { document.getElementById('modal-stats').style.display = 'none'; }
         function logout() { sessionStorage.removeItem('pass'); location.reload(); }
         async function fetchData() {
             const res = await fetch(API, { method:'POST', body: JSON.stringify({ password: sessionStorage.getItem('pass'), action:'stats' }) });
-            const json = await res.json();
-            if(json.ok) updateDashboard(json.data);
+            const json = await res.json(); if(json.ok) updateDashboard(json.data);
         }
-
         async function fetchPodcasts() {
             const res = await fetch(API, { method:'POST', body: JSON.stringify({ password: sessionStorage.getItem('pass'), action:'get_podcasts' }) });
             const json = await res.json();
@@ -385,7 +402,6 @@
                 `).join('');
             }
         }
-
         async function fetchSettings() {
             const res = await fetch(API, { method:'POST', body: JSON.stringify({ password: sessionStorage.getItem('pass'), action:'get_settings' }) });
             const json = await res.json();
@@ -394,16 +410,22 @@
                 document.getElementById('set-phone').value = json.settings.phone;
             }
         }
-
         async function saveSettings() {
             const settings = {
                 maktab_haqida: document.getElementById('set-about').value,
                 phone: document.getElementById('set-phone').value,
-                telegram: '', instagram: '', youtube: '' // Placeholder
+                telegram: '', instagram: '', youtube: ''
             };
             await fetch(API, { method:'POST', body: JSON.stringify({ password: sessionStorage.getItem('pass'), action:'update_settings', settings }) });
             alert("Saqlandi");
         }
+        window.onload = async () => {
+            const pass = sessionStorage.getItem('pass');
+            if(pass) {
+                const res = await fetch(API, { method:'POST', body: JSON.stringify({ password:pass, action:'stats' }) });
+                if(res.ok) init((await res.json()).data);
+            }
+        };
     </script>
 </body>
 </html>

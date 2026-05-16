@@ -77,13 +77,13 @@ async def on_startup(dispatcher: Dispatcher) -> None:
             logger.error(f"Error serving webappregister: {e}")
             return web.Response(status=500, text="Internal Server Error")
 
-    async def serve_marketingadmin(request: web.Request) -> web.Response:
+    async def serve_admin_page(request: web.Request) -> web.Response:
         try:
             with open("admin.html", "r", encoding="utf-8") as f:
                 html = f.read()
             return web.Response(text=html, content_type="text/html")
         except Exception as e:
-            logger.error(f"Error serving marketing admin page: {e}")
+            logger.error(f"Error serving admin page: {e}")
             return web.Response(status=500, text="Internal Server Error")
 
     # Wrap admin stats to access bot for broadcasting
@@ -108,7 +108,7 @@ async def on_startup(dispatcher: Dispatcher) -> None:
 
     app.router.add_get('/go', serve_redirect)
     app.router.add_get('/webappregister', serve_webappregister)
-    app.router.add_get('/marketingadmin', serve_marketingadmin)
+    app.router.add_get('/admin', serve_admin_page)
 
     for route in list(app.router.routes()):
         cors.add(route)
