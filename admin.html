@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Rahimov School - Admin Panel</title>
+    <title>Rahimov School - CRM Admin</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -54,9 +54,7 @@
             max-width: 400px;
             text-align: center;
         }
-        .login-card img { width: 80px; margin-bottom: 20px; }
         .login-card h2 { margin-bottom: 8px; font-weight: 900; font-size: 24px; color: #1a202c; }
-        .login-card p { margin-bottom: 32px; color: var(--text-light); }
         .login-card input {
             width: 100%;
             padding: 14px 20px;
@@ -68,7 +66,6 @@
             outline: none;
             transition: 0.3s;
         }
-        .login-card input:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(20, 199, 103, 0.1); }
         .btn-primary {
             width: 100%;
             padding: 14px;
@@ -86,8 +83,6 @@
             gap: 10px;
         }
         .btn-primary:hover { background: var(--primary-dark); transform: translateY(-2px); }
-        .btn-primary:active { transform: translateY(0); }
-        .error-msg { color: #e53e3e; font-size: 14px; margin-bottom: 16px; font-weight: 500; display: none; }
 
         /* --- Layout --- */
         #admin-layout { display: none; min-height: 100vh; }
@@ -111,7 +106,7 @@
 
         .logo-box { display: flex; align-items: center; gap: 12px; margin-bottom: 48px; }
         .logo-box i { font-size: 28px; color: var(--primary); }
-        .logo-box span { font-weight: 900; font-size: 20px; letter-spacing: -0.5px; }
+        .logo-box span { font-weight: 900; font-size: 20px; }
 
         .nav-list { list-style: none; flex-grow: 1; }
         .nav-item {
@@ -131,8 +126,6 @@
         .nav-item.active { background: var(--primary); color: white; }
         .nav-item i { width: 20px; text-align: center; font-size: 18px; }
 
-        .logout-section { margin-top: auto; padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.1); }
-
         /* --- UI Elements --- */
         .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; }
         .section-header h2 { font-weight: 900; font-size: 28px; }
@@ -147,24 +140,13 @@
         .card-title { font-weight: 700; font-size: 18px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
 
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 24px; margin-bottom: 32px; }
-        .stat-card {
-            padding: 24px;
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
-        .stat-icon {
-            width: 56px; height: 56px;
-            border-radius: var(--radius-md);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 24px;
-        }
-        .stat-info h4 { font-size: 13px; color: var(--text-light); text-transform: uppercase; margin-bottom: 4px; }
+        .stat-card { padding: 24px; display: flex; align-items: center; gap: 20px; }
+        .stat-icon { width: 56px; height: 56px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 24px; }
         .stat-info .value { font-size: 28px; font-weight: 900; }
 
         /* --- Forms & Tables --- */
         .form-group { margin-bottom: 20px; }
-        .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--text); }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 600; }
         .form-control {
             width: 100%;
             padding: 12px 16px;
@@ -174,541 +156,254 @@
             outline: none;
             transition: 0.2s;
         }
-        .form-control:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(20, 199, 103, 0.1); }
-        textarea.form-control { min-height: 120px; resize: vertical; }
+        .form-control:focus { border-color: var(--primary); }
 
         table { width: 100%; border-collapse: collapse; }
         th { text-align: left; padding: 16px; background: #f8fafc; font-weight: 700; color: var(--text-light); border-bottom: 2px solid var(--border); }
-        td { padding: 16px; border-bottom: 1px solid var(--border); color: var(--text); }
-        tr:hover { background: #f8fafc; }
+        td { padding: 16px; border-bottom: 1px solid var(--border); }
 
-        .badge {
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 700;
-        }
-        .badge-video { background: #fee2e2; color: #ef4444; }
-        .badge-audio { background: #dcfce7; color: #14c767; }
-
-        .actions { display: flex; gap: 8px; }
-        .btn-icon {
-            width: 36px; height: 36px;
-            display: flex; align-items: center; justify-content: center;
-            border-radius: 8px;
-            border: 1px solid var(--border);
-            background: white;
-            cursor: pointer;
-            transition: 0.2s;
-            color: var(--text-light);
-        }
-        .btn-icon:hover { background: #f8fafc; color: var(--primary); border-color: var(--primary); }
-        .btn-icon.delete:hover { color: #ef4444; border-color: #ef4444; }
-
-        /* --- Modals --- */
+        /* --- Broadcast UI --- */
+        .broadcast-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+        .btn-list { margin-top: 10px; }
+        .btn-item { display: flex; gap: 10px; margin-bottom: 10px; background: #f8fafc; padding: 10px; border-radius: 8px; }
+        
+        /* --- Modal --- */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5);
-            backdrop-filter: blur(4px);
-            display: none; align-items: center; justify-content: center;
-            z-index: 2000;
+            background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);
+            display: none; align-items: center; justify-content: center; z-index: 2000;
         }
-        .modal {
-            background: white;
-            padding: 32px;
-            border-radius: var(--radius-lg);
-            width: 100%;
-            max-width: 500px;
-            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
-        }
+        .modal { background: white; padding: 32px; border-radius: var(--radius-lg); width: 100%; max-width: 600px; max-height: 90vh; overflow-y: auto; }
 
-        /* --- Specific Tabs --- */
-        #tab-podcasts, #tab-settings, #tab-broadcast { display: none; }
+        .hidden { display: none; }
     </style>
 </head>
 <body>
 
-    <!-- Login Screen -->
+    <!-- Login -->
     <div id="login-screen">
         <div class="login-card">
             <i class="fas fa-user-shield" style="font-size: 48px; color: var(--primary); margin-bottom: 20px;"></i>
             <h2>Rahimov Admin</h2>
             <p>Boshqaruv tizimiga kiring</p>
-            <div id="login-error" class="error-msg">Parol xato!</div>
-            <form id="login-form">
-                <input type="password" id="password" placeholder="Parolni kiriting" required>
-                <button type="submit" class="btn-primary" id="login-btn">
-                    <span>Kirish</span>
-                    <i class="fas fa-arrow-right"></i>
-                </button>
-            </form>
+            <input type="password" id="password" placeholder="Parolni kiriting">
+            <button class="btn-primary" onclick="login()">Kirish</button>
         </div>
     </div>
 
-    <!-- Main Layout -->
+    <!-- Layout -->
     <div id="admin-layout">
-        <!-- Sidebar -->
         <nav class="sidebar">
-            <div class="logo-box">
-                <i class="fas fa-school"></i>
-                <span>Rahimov Panel</span>
-            </div>
-            
+            <div class="logo-box"><i class="fas fa-school"></i><span>Rahimov Panel</span></div>
             <ul class="nav-list">
-                <li class="nav-item active" onclick="switchTab('dashboard')">
-                    <i class="fas fa-chart-pie"></i>
-                    <span class="nav-text">Dashboard</span>
-                </li>
-                <li class="nav-item" onclick="switchTab('podcasts')">
-                    <i class="fas fa-microphone-lines"></i>
-                    <span class="nav-text">Suhbatlar</span>
-                </li>
-                <li class="nav-item" onclick="switchTab('broadcast')">
-                    <i class="fas fa-paper-plane"></i>
-                    <span class="nav-text">Xabar yuborish</span>
-                </li>
-                <li class="nav-item" onclick="switchTab('settings')">
-                    <i class="fas fa-cog"></i>
-                    <span class="nav-text">Bot Sozlamalari</span>
-                </li>
+                <li class="nav-item active" onclick="switchTab('dashboard')"><i class="fas fa-chart-pie"></i><span class="nav-text">Dashboard</span></li>
+                <li class="nav-item" onclick="switchTab('podcasts')"><i class="fas fa-microphone-lines"></i><span class="nav-text">Suhbatlar</span></li>
+                <li class="nav-item" onclick="switchTab('broadcast')"><i class="fas fa-paper-plane"></i><span class="nav-text">Xabar yuborish</span></li>
+                <li class="nav-item" onclick="switchTab('settings')"><i class="fas fa-cog"></i><span class="nav-text">Sozlamalari</span></li>
             </ul>
-
-            <div class="logout-section">
-                <div class="nav-item" onclick="logout()" style="color: #ef4444;">
-                    <i class="fas fa-sign-out-alt"></i>
-                    <span class="nav-text">Chiqish</span>
-                </div>
-            </div>
+            <div class="nav-item" onclick="logout()" style="margin-top:auto; color:#ef4444;"><i class="fas fa-sign-out-alt"></i><span class="nav-text">Chiqish</span></div>
         </nav>
 
-        <!-- Main Content -->
         <main class="main-content">
             
-            <!-- TAB: Dashboard -->
+            <!-- Dashboard -->
             <div id="tab-dashboard" class="fade-in">
-                <div class="section-header">
-                    <h2>Statistika</h2>
-                    <div style="display: flex; gap: 12px;">
-                        <button class="btn-primary" style="width: auto; padding: 10px 20px; background: #3b82f6;" onclick="exportUsers()">
-                            <i class="fas fa-file-excel"></i> <span>Excel (CSV)</span>
-                        </button>
-                        <button class="btn-primary" style="width: auto; padding: 10px 20px;" onclick="fetchData()">
-                            <i class="fas fa-sync"></i> <span>Yangilash</span>
-                        </button>
-                    </div>
+                <div class="section-header"><h2>Statistika</h2><button class="btn-primary" style="width:auto; padding:10px 20px;" onclick="fetchData()">Yangilash</button></div>
+                <div class="stats-grid" id="stats-summary">
+                    <!-- Stats will be loaded here -->
                 </div>
-
-                <div class="stats-grid">
-                    <div class="card stat-card">
-                        <div class="stat-icon" style="background: #e0f2fe; color: #0ea5e9;"><i class="fas fa-users"></i></div>
-                        <div class="stat-info">
-                            <h4>Jami Foydalanuvchilar</h4>
-                            <div class="value" id="stat-total">0</div>
-                        </div>
-                    </div>
-                    <div class="card stat-card">
-                        <div class="stat-icon" style="background: #dcfce7; color: #22c55e;"><i class="fas fa-user-check"></i></div>
-                        <div class="stat-info">
-                            <h4>Ro'yxatdan o'tganlar</h4>
-                            <div class="value" id="stat-reg">0</div>
-                        </div>
-                    </div>
-                    <div class="card stat-card">
-                        <div class="stat-icon" style="background: #fef3c7; color: #f59e0b;"><i class="fas fa-user-clock"></i></div>
-                        <div class="stat-info">
-                            <h4>Ro'yxatdan o'tmagan</h4>
-                            <div class="value" id="stat-unreg">0</div>
-                        </div>
-                    </div>
-                    <div class="card stat-card">
-                        <div class="stat-icon" style="background: #fee2e2; color: #ef4444;"><i class="fas fa-user-slash"></i></div>
-                        <div class="stat-info">
-                            <h4>Bloklaganlar</h4>
-                            <div class="value" id="stat-blocked">0</div>
-                        </div>
-                    </div>
+                <div class="card">
+                    <div class="card-title">Oxirgi Ro'yxatdan O'tganlar</div>
+                    <table><thead><tr><th>Ism Familiya</th><th>Telefon</th><th>Hudud</th><th>Sinf</th></tr></thead><tbody id="table-users"></tbody></table>
                 </div>
+            </div>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+            <!-- Podcasts -->
+            <div id="tab-podcasts" class="fade-in hidden">
+                <div class="section-header"><h2>Suhbatlar</h2></div>
+                <div class="card"><table><thead><tr><th>#</th><th>Sarlavha</th><th>Turi</th><th>Amallar</th></tr></thead><tbody id="table-podcasts"></tbody></table></div>
+            </div>
+
+            <!-- Broadcast -->
+            <div id="tab-broadcast" class="fade-in hidden">
+                <div class="section-header"><h2>Xabar yuborish</h2></div>
+                <div class="broadcast-grid">
                     <div class="card">
-                        <div class="card-title"><i class="fas fa-chart-pie"></i> Umumiy Holat</div>
-                        <div style="height: 300px;"><canvas id="chart-users"></canvas></div>
+                        <div class="card-title">Yangi xabar</div>
+                        <div class="form-group"><label>Xabar matni (HTML)</label><textarea class="form-control" id="bc-text" placeholder="Xabarni kiriting..."></textarea></div>
+                        <div class="form-group">
+                            <label>Kimga yuborilsin?</label>
+                            <select class="form-control" id="bc-target">
+                                <option value="all">Hammaga</option>
+                                <option value="registered">Faqat ro'yxatdan o'tganlarga</option>
+                                <option value="unregistered">Ro'yxatdan o'tmaganlarga</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Tugmalar</label>
+                            <div id="bc-buttons" class="btn-list"></div>
+                            <button class="btn-primary" style="background:#3b82f6; margin-top:10px;" onclick="addBcButton()">+ Tugma qo'shish</button>
+                        </div>
+                        <button class="btn-primary" onclick="sendBroadcast()">Yuborish <i class="fas fa-paper-plane"></i></button>
                     </div>
                     <div class="card">
-                        <div class="card-title"><i class="fas fa-eye"></i> Videolar Ko'rilishi</div>
-                        <div style="height: 300px;"><canvas id="chart-videos"></canvas></div>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <div class="card-title"><i class="fas fa-id-card"></i> Oxirgi Ro'yxatdan O'tganlar</div>
-                    <div style="overflow-x: auto;">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Ism Familiya</th>
-                                    <th>Telefon</th>
-                                    <th>Sinf / Hudud</th>
-                                    <th>Vaqt</th>
-                                </tr>
-                            </thead>
-                            <tbody id="table-users"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- TAB: Podcasts -->
-            <div id="tab-podcasts" class="fade-in">
-                <div class="section-header">
-                    <h2>Suhbatlar Boshqaruvi</h2>
-                </div>
-
-                <div class="card">
-                    <div class="card-title"><i class="fas fa-list"></i> Barcha Suhbatlar</div>
-                    <div style="overflow-x: auto;">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th style="width: 50px;">#</th>
-                                    <th>Sarlavha</th>
-                                    <th>Turi</th>
-                                    <th>Havola</th>
-                                    <th style="width: 100px;">Amallar</th>
-                                </tr>
-                            </thead>
-                            <tbody id="table-podcasts"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- TAB: Settings -->
-            <div id="tab-settings" class="fade-in">
-                <div class="section-header">
-                    <h2>Bot Sozlamalari</h2>
-                    <button class="btn-primary" style="width: auto; padding: 10px 24px;" onclick="saveBotSettings()">
-                        <i class="fas fa-save"></i> <span>Saqlash</span>
-                    </button>
-                </div>
-
-                <div class="card">
-                    <div class="card-title"><i class="fas fa-info-circle"></i> "Maktab haqida" Matni</div>
-                    <div class="form-group">
-                        <label>Asosiy matn (HTML formatida)</label>
-                        <textarea class="form-control" id="set-maktab-haqida"></textarea>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <div class="card-title"><i class="fas fa-link"></i> Kontakt va Havolalar</div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                        <div class="form-group">
-                            <label>Telefon raqam</label>
-                            <input type="text" class="form-control" id="set-phone">
-                        </div>
-                        <div class="form-group">
-                            <label>Telegram kanal</label>
-                            <input type="text" class="form-control" id="set-telegram">
-                        </div>
-                        <div class="form-group">
-                            <label>Instagram sahifa</label>
-                            <input type="text" class="form-control" id="set-instagram">
-                        </div>
-                        <div class="form-group">
-                            <label>YouTube kanal</label>
-                            <input type="text" class="form-control" id="set-youtube">
+                        <div class="card-title">Yuborilgan xabarlar tarixi</div>
+                        <div style="max-height: 500px; overflow-y: auto;">
+                            <table id="table-bc-history"><thead><tr><th>Vaqt</th><th>Target</th><th>Stat</th></tr></thead><tbody></tbody></table>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- TAB: Broadcast (Placeholder) -->
-            <div id="tab-broadcast" class="fade-in">
-                <div class="section-header">
-                    <h2>Xabar Yuborish</h2>
-                </div>
-                <div class="card" style="text-align: center; padding: 60px;">
-                    <i class="fas fa-rocket" style="font-size: 64px; color: var(--primary); margin-bottom: 24px;"></i>
-                    <h3>Tez orada qo'shiladi!</h3>
-                    <p style="color: var(--text-light); max-width: 400px; margin: 0 auto; margin-top: 12px;">
-                        Veb-panel orqali foydalanuvchilarga xabar yuborish funksiyasi hozirda bot orqali ishlaydi. 
-                        Ushbu bo'lim keyingi yangilanishda paydo bo'ladi.
-                    </p>
+            <!-- Settings -->
+            <div id="tab-settings" class="fade-in hidden">
+                <div class="section-header"><h2>Bot Sozlamalari</h2><button class="btn-primary" style="width:auto; padding:10px 20px;" onclick="saveSettings()">Saqlash</button></div>
+                <div class="card">
+                    <div class="form-group"><label>Maktab haqida</label><textarea class="form-control" id="set-about"></textarea></div>
+                    <div class="form-group"><label>Telefon</label><input type="text" class="form-control" id="set-phone"></div>
                 </div>
             </div>
-
         </main>
     </div>
 
-    <!-- Modal: Edit Podcast -->
-    <div class="modal-overlay" id="modal-podcast">
+    <!-- Modal Stats -->
+    <div class="modal-overlay" id="modal-stats">
         <div class="modal">
-            <div class="card-title" id="podcast-modal-title">Suhbatni tahrirlash</div>
-            <input type="hidden" id="edit-p-id">
-            <div class="form-group">
-                <label>Sarlavha</label>
-                <input type="text" class="form-control" id="edit-p-title">
-            </div>
-            <div class="form-group">
-                <label>Tavsif</label>
-                <textarea class="form-control" id="edit-p-desc"></textarea>
-            </div>
-            <div class="form-group">
-                <label>Havola (Link)</label>
-                <input type="text" class="form-control" id="edit-p-url">
-            </div>
-            <div style="display: flex; gap: 12px; margin-top: 24px;">
-                <button class="btn-primary" style="flex: 2;" onclick="confirmUpdatePodcast()">Saqlash</button>
-                <button class="btn-primary" style="flex: 1; background: #e2e8f0; color: #475569;" onclick="closeModal()">Yopish</button>
-            </div>
+            <h3 style="margin-bottom:20px;">Tugmani bosganlar ro'yxati</h3>
+            <table><thead><tr><th>Foydalanuvchi</th><th>Telefon</th><th>Vaqt</th></tr></thead><tbody id="table-click-stats"></tbody></table>
+            <button class="btn-primary" style="margin-top:20px; background:#e2e8f0; color:#1a202c;" onclick="closeModal()">Yopish</button>
         </div>
     </div>
 
     <script>
-        const API_BASE = "/api/admin/stats";
-        let chartUsers = null;
-        let chartVideos = null;
+        const API = "/api/admin/stats";
+        let bcButtons = [];
 
-        // Auth & Navigation
-        document.getElementById('login-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
+        async function login() {
             const pass = document.getElementById('password').value;
-            const btn = document.getElementById('login-btn');
-            btn.disabled = true;
-            
-            try {
-                const res = await fetch(API_BASE, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ password: pass, action: 'stats' })
-                });
-                const json = await res.json();
-                if (json.ok) {
-                    sessionStorage.setItem('admin_pass', pass);
-                    initDashboard(json.data);
-                } else {
-                    document.getElementById('login-error').style.display = 'block';
-                }
-            } catch (err) { alert("Xatolik: " + err.message); }
-            finally { btn.disabled = false; }
-        });
-
-        function logout() {
-            sessionStorage.removeItem('admin_pass');
-            location.reload();
-        }
-
-        function switchTab(tabId) {
-            document.querySelectorAll('.fade-in').forEach(t => t.style.display = 'none');
-            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-            
-            document.getElementById('tab-' + tabId).style.display = 'block';
-            document.querySelector(`.nav-item[onclick="switchTab('${tabId}')"]`).classList.add('active');
-
-            if (tabId === 'podcasts') fetchPodcasts();
-            if (tabId === 'settings') fetchSettings();
-        }
-
-        // --- Data Fetching ---
-        async function fetchData() {
-            const pass = sessionStorage.getItem('admin_pass');
-            const res = await fetch(API_BASE, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ password: pass, action: 'stats' })
-            });
+            const res = await fetch(API, { method:'POST', body: JSON.stringify({ password:pass, action:'stats' }) });
             const json = await res.json();
-            if (json.ok) initDashboard(json.data);
+            if(json.ok) { sessionStorage.setItem('pass', pass); init(json.data); } else { alert("Parol xato"); }
         }
 
-        async function exportUsers() {
-            const pass = sessionStorage.getItem('admin_pass');
-            const res = await fetch(API_BASE, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ password: pass, action: 'export_users' })
-            });
-            const blob = await res.blob();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'users.csv';
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-        }
-
-        function initDashboard(data) {
+        function init(data) {
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('admin-layout').style.display = 'block';
+            updateDashboard(data);
+        }
 
+        function updateDashboard(data) {
             const u = data.user_stats;
-            document.getElementById('stat-total').innerText = u.total;
-            document.getElementById('stat-reg').innerText = u.registered;
-            document.getElementById('stat-unreg').innerText = u.unregistered;
-            document.getElementById('stat-blocked').innerText = u.blocked;
-
-            // Chart Users
-            const ctx1 = document.getElementById('chart-users').getContext('2d');
-            if (chartUsers) chartUsers.destroy();
-            chartUsers = new Chart(ctx1, {
-                type: 'doughnut',
-                data: {
-                    labels: ["Ro'yxatdan o'tganlar", "O'tmaganlar", "Bloklaganlar"],
-                    datasets: [{
-                        data: [u.registered, u.unregistered, u.blocked],
-                        backgroundColor: ['#14c767', '#e2e8f0', '#ef4444'],
-                        borderWidth: 0,
-                        hoverOffset: 10
-                    }]
-                },
-                options: { cutout: '75%', plugins: { legend: { position: 'bottom' } }, maintainAspectRatio: false }
-            });
-
-            // Chart Videos
-            const ctx2 = document.getElementById('chart-videos').getContext('2d');
-            if (chartVideos) chartVideos.destroy();
-            chartVideos = new Chart(ctx2, {
-                type: 'bar',
-                data: {
-                    labels: data.video_stats.labels,
-                    datasets: [{
-                        label: 'Ko\'rishlar',
-                        data: data.video_stats.views,
-                        backgroundColor: '#14c767',
-                        borderRadius: 6
-                    }]
-                },
-                options: { scales: { y: { beginAtZero: true } }, maintainAspectRatio: false }
-            });
-
-            // Table
-            const tbody = document.getElementById('table-users');
-            tbody.innerHTML = data.recent_users.map(user => `
-                <tr>
-                    <td><strong>${user.name}</strong></td>
-                    <td>${user.phone}</td>
-                    <td><span style="color:var(--text-light)">${user.grade} / ${user.district}</span></td>
-                    <td>${new Date().toLocaleDateString()}</td>
-                </tr>
+            document.getElementById('stats-summary').innerHTML = `
+                <div class="card stat-card"><div class="stat-info"><h4>Jami</h4><div class="value">${u.total}</div></div></div>
+                <div class="card stat-card"><div class="stat-info"><h4>Ro'yxatdan o'tgan</h4><div class="value">${u.registered}</div></div></div>
+                <div class="card stat-card"><div class="stat-info"><h4>O'tmagan</h4><div class="value">${u.unregistered}</div></div></div>
+            `;
+            document.getElementById('table-users').innerHTML = data.recent_users.map(user => `
+                <tr><td>${user.name}</td><td>${user.phone}</td><td>${user.district}</td><td>${user.grade}</td></tr>
             `).join('');
         }
 
-        // --- Podcasts Logic ---
-        async function fetchPodcasts() {
-            const pass = sessionStorage.getItem('admin_pass');
-            const res = await fetch(API_BASE, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ password: pass, action: 'get_podcasts' })
-            });
+        function switchTab(tab) {
+            document.querySelectorAll('.fade-in').forEach(t => t.classList.add('hidden'));
+            document.getElementById('tab-' + tab).classList.remove('hidden');
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            document.querySelector(`[onclick="switchTab('${tab}')"]`).classList.add('active');
+            if(tab === 'broadcast') fetchBcHistory();
+            if(tab === 'podcasts') fetchPodcasts();
+            if(tab === 'settings') fetchSettings();
+        }
+
+        // --- Broadcast ---
+        function addBcButton() {
+            const id = Date.now();
+            bcButtons.push({ id, text: '', url: '' });
+            renderBcButtons();
+        }
+        function renderBcButtons() {
+            const cont = document.getElementById('bc-buttons');
+            cont.innerHTML = bcButtons.map(b => `
+                <div class="btn-item">
+                    <input type="text" class="form-control" placeholder="Tugma nomi" value="${b.text}" onchange="updateBcBtn(${b.id}, 'text', this.value)">
+                    <input type="text" class="form-control" placeholder="Link" value="${b.url}" onchange="updateBcBtn(${b.id}, 'url', this.value)">
+                    <button onclick="removeBcBtn(${b.id})" style="color:red; background:none; border:none; cursor:pointer;"><i class="fas fa-trash"></i></button>
+                </div>
+            `).join('');
+        }
+        function updateBcBtn(id, key, val) { const b = bcButtons.find(x => x.id === id); if(b) b[key] = val; }
+        function removeBcBtn(id) { bcButtons = bcButtons.filter(x => x.id !== id); renderBcButtons(); }
+
+        async function sendBroadcast() {
+            const text = document.getElementById('bc-text').value;
+            const target = document.getElementById('bc-target').value;
+            if(!text) return alert("Matn kiriting");
+            const res = await fetch(API, { method:'POST', body: JSON.stringify({ 
+                password: sessionStorage.getItem('pass'), action:'broadcast', text, target, buttons: bcButtons 
+            }) });
+            if((await res.json()).ok) { alert("Yuborish boshlandi"); document.getElementById('bc-text').value = ''; bcButtons=[]; renderBcButtons(); fetchBcHistory(); }
+        }
+
+        async function fetchBcHistory() {
+            const res = await fetch(API, { method:'POST', body: JSON.stringify({ password: sessionStorage.getItem('pass'), action:'get_broadcast_history' }) });
             const json = await res.json();
-            if (json.ok) {
-                const tbody = document.getElementById('table-podcasts');
-                tbody.innerHTML = json.podcasts.map(p => `
+            if(json.ok) {
+                document.getElementById('table-bc-history').querySelector('tbody').innerHTML = json.history.map(h => `
                     <tr>
-                        <td>${p.id}</td>
-                        <td><strong>${p.title}</strong></td>
-                        <td><span class="badge badge-${p.type}">${p.type.toUpperCase()}</span></td>
-                        <td><a href="${p.url}" target="_blank" style="color:var(--primary)">Ochish <i class="fas fa-external-link"></i></a></td>
-                        <td>
-                            <div class="actions">
-                                <button class="btn-icon" onclick='openEditPodcast(${JSON.stringify(p).replace(/'/g, "&apos;")})'><i class="fas fa-edit"></i></button>
-                                <button class="btn-icon delete" onclick="deletePodcast(${p.id})"><i class="fas fa-trash"></i></button>
-                            </div>
-                        </td>
+                        <td><small>${h.time}</small></td>
+                        <td>${h.target}</td>
+                        <td><button class="btn-primary" style="padding:5px 10px; font-size:12px;" onclick="showClickStats('${h.id}')">Ko'rish</button></td>
                     </tr>
                 `).join('');
             }
         }
 
-        function openEditPodcast(p) {
-            document.getElementById('edit-p-id').value = p.id;
-            document.getElementById('edit-p-title').value = p.title;
-            document.getElementById('edit-p-desc').value = p.description || "";
-            document.getElementById('edit-p-url').value = p.url || "";
-            document.getElementById('modal-podcast').style.display = 'flex';
-        }
-
-        function closeModal() { document.getElementById('modal-podcast').style.display = 'none'; }
-
-        async function confirmUpdatePodcast() {
-            const pass = sessionStorage.getItem('admin_pass');
-            const id = document.getElementById('edit-p-id').value;
-            const data = {
-                title: document.getElementById('edit-p-title').value,
-                description: document.getElementById('edit-p-desc').value,
-                url: document.getElementById('edit-p-url').value
-            };
-            const res = await fetch(API_BASE, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ password: pass, action: 'update_podcast', id, podcast_data: data })
-            });
-            if ((await res.json()).ok) { closeModal(); fetchPodcasts(); }
-        }
-
-        async function deletePodcast(id) {
-            if (!confirm("Haqiqatdan ham ushbu suhbatni o'chirmoqchimisiz?")) return;
-            const pass = sessionStorage.getItem('admin_pass');
-            const res = await fetch(API_BASE, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ password: pass, action: 'delete_podcast', id })
-            });
-            if ((await res.json()).ok) fetchPodcasts();
-        }
-
-        // --- Settings Logic ---
-        async function fetchSettings() {
-            const pass = sessionStorage.getItem('admin_pass');
-            const res = await fetch(API_BASE, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ password: pass, action: 'get_settings' })
-            });
+        async function showClickStats(id) {
+            const res = await fetch(API, { method:'POST', body: JSON.stringify({ password: sessionStorage.getItem('pass'), action:'get_click_stats', broadcast_id: id }) });
             const json = await res.json();
-            if (json.ok) {
-                const s = json.settings;
-                document.getElementById('set-maktab-haqida').value = s.maktab_haqida;
-                document.getElementById('set-phone').value = s.phone;
-                document.getElementById('set-telegram').value = s.telegram;
-                document.getElementById('set-instagram').value = s.instagram;
-                document.getElementById('set-youtube').value = s.youtube;
+            if(json.ok) {
+                document.getElementById('table-click-stats').innerHTML = json.clicks.map(c => `
+                    <tr><td>${c.name}</td><td>${c.phone}</td><td><small>${c.time}</small></td></tr>
+                `).join('');
+                document.getElementById('modal-stats').style.display = 'flex';
             }
         }
 
-        async function saveBotSettings() {
-            const pass = sessionStorage.getItem('admin_pass');
+        function closeModal() { document.getElementById('modal-stats').style.display = 'none'; }
+        function logout() { sessionStorage.removeItem('pass'); location.reload(); }
+        async function fetchData() {
+            const res = await fetch(API, { method:'POST', body: JSON.stringify({ password: sessionStorage.getItem('pass'), action:'stats' }) });
+            const json = await res.json();
+            if(json.ok) updateDashboard(json.data);
+        }
+
+        async function fetchPodcasts() {
+            const res = await fetch(API, { method:'POST', body: JSON.stringify({ password: sessionStorage.getItem('pass'), action:'get_podcasts' }) });
+            const json = await res.json();
+            if(json.ok) {
+                document.getElementById('table-podcasts').innerHTML = json.podcasts.map(p => `
+                    <tr><td>${p.id}</td><td>${p.title}</td><td>${p.type}</td><td><button class="btn-primary" style="width:auto; padding:5px 10px;">O'chirish</button></td></tr>
+                `).join('');
+            }
+        }
+
+        async function fetchSettings() {
+            const res = await fetch(API, { method:'POST', body: JSON.stringify({ password: sessionStorage.getItem('pass'), action:'get_settings' }) });
+            const json = await res.json();
+            if(json.ok) {
+                document.getElementById('set-about').value = json.settings.maktab_haqida;
+                document.getElementById('set-phone').value = json.settings.phone;
+            }
+        }
+
+        async function saveSettings() {
             const settings = {
-                maktab_haqida: document.getElementById('set-maktab-haqida').value,
+                maktab_haqida: document.getElementById('set-about').value,
                 phone: document.getElementById('set-phone').value,
-                telegram: document.getElementById('set-telegram').value,
-                instagram: document.getElementById('set-instagram').value,
-                youtube: document.getElementById('set-youtube').value
+                telegram: '', instagram: '', youtube: '' // Placeholder
             };
-            const res = await fetch(API_BASE, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ password: pass, action: 'update_settings', settings })
-            });
-            if ((await res.json()).ok) alert("Sozlamalar saqlandi!");
+            await fetch(API, { method:'POST', body: JSON.stringify({ password: sessionStorage.getItem('pass'), action:'update_settings', settings }) });
+            alert("Saqlandi");
         }
-
-        window.onload = async () => {
-            const pass = sessionStorage.getItem('admin_pass');
-            if (pass) {
-                const res = await fetch(API_BASE, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ password: pass, action: 'stats' })
-                });
-                const json = await res.json();
-                if (json.ok) initDashboard(json.data);
-                else sessionStorage.removeItem('admin_pass');
-            }
-        };
     </script>
 </body>
 </html>

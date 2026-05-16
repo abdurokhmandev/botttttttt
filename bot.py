@@ -83,11 +83,30 @@ async def on_startup(dispatcher: Dispatcher) -> None:
                 html = f.read()
             return web.Response(text=html, content_type="text/html")
         except Exception as e:
-            logger.error(f"Error serving marketingadmin: {e}")
+            logger.error(f"Error serving marketing admin page: {e}")
             return web.Response(status=500, text="Internal Server Error")
 
+    # Wrap admin stats to access bot for broadcasting
+    async def admin_handler_wrapper(request):
+        return await admin_stats_api_handler(request, bot)
+
     app.router.add_post('/api/submit', handler_wrapper)
-    app.router.add_post('/api/admin/stats', admin_stats_api_handler)
+    app.router.add_post('/api/admin/stats', admin_handler_wrapper)
+    async def serve_redirect(request: web.Request) -> web.Response:
+        b_id = request.query.get('b')
+        u_id = request.query.get('u')
+        url = request.query.get('url')
+        
+        if b_id and u_id:
+            from storage.click_store import log_click
+            log_click(b_id, u_id)
+            
+        if not url:
+            return web.Response(text="URL topilmadi", status=400)
+            
+        return web.HTTPFound(location=url)
+
+    app.router.add_get('/go', serve_redirect)
     app.router.add_get('/webappregister', serve_webappregister)
     app.router.add_get('/marketingadmin', serve_marketingadmin)
 
