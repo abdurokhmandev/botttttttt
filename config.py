@@ -108,5 +108,20 @@ for key, value in os.environ.items():
         if "type" not in PODCASTS[index]:
             PODCASTS[index]["type"] = "audio"
 
+# ── Clean Titles ──────────────────────────────────────────────────────────────
+def clean_title(title: str) -> str:
+    if not title:
+        return ""
+    return re.sub(r'[📹🎧📷📽️🎙️📼]', '', title).strip()
+
+# Clean all video/audio titles
+for idx in VIDEOS:
+    if "title" in VIDEOS[idx]:
+        VIDEOS[idx]["title"] = clean_title(VIDEOS[idx]["title"])
+
+for idx in PODCASTS:
+    if "title" in PODCASTS[idx]:
+        PODCASTS[idx]["title"] = clean_title(PODCASTS[idx]["title"])
+
 CREDENTIALS_PATH = os.path.join(BASE_DIR, "credentials.json")
 STATE_FILE_PATH = os.path.join(BASE_DIR, "data", "state.json")

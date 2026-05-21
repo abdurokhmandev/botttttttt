@@ -9,7 +9,7 @@ from storage import state_store
 
 logger = logging.getLogger(__name__)
 
-REMINDER_DELAY = 24 * 60 * 60  # 24 hours in seconds
+REMINDER_DELAY = 15 * 60  # 15 minutes in seconds
 
 
 def _build_register_keyboard() -> InlineKeyboardMarkup:

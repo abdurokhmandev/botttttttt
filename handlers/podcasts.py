@@ -28,8 +28,11 @@ def _podcast_list_text() -> str:
         return "📹 Hozircha suhbatlar mavjud emas."
     lines = []
     for idx in sorted(PODCASTS.keys()):
-        title = PODCASTS[idx].get("title", f"Suhbat {idx}")
-        lines.append(f"<b>{idx}.</b> {title}")
+        item = PODCASTS[idx]
+        title = item.get("title", f"Suhbat {idx}")
+        media_type = item.get("type", "audio")
+        emoji = "📹" if media_type == "video" else "🎧"
+        lines.append(f"<b>{idx}.</b> {emoji} {title}")
     return "\n".join(lines)
 
 
@@ -114,7 +117,8 @@ async def handle_podcast_callback(callback: types.CallbackQuery) -> None:
     file_type   = data.get("type", "audio") # audio yoki video
     markup      = _podcast_action_keyboard(idx)
 
-    caption = f"<b>📹 {title}</b>"
+    emoji = "📹" if file_type == "video" else "🎧"
+    caption = f"<b>{emoji} {title}</b>"
     if description:
         caption += f"\n\n{description}"
     caption += "\n\n🏫 Rahimov School suhbatlari"
@@ -242,8 +246,9 @@ async def ap_confirm(callback: types.CallbackQuery, state: FSMContext):
     data = await state.get_data()
     idx  = data.get("new_index", max(PODCASTS.keys(), default=0) + 1)
 
+    from config import clean_title
     podcast_data = {
-        "title":       data.get("title", ""),
+        "title":       clean_title(data.get("title", "")),
         "description": data.get("description", ""),
         "audio":       data.get("audio", ""),
         "url":         data.get("url", ""),

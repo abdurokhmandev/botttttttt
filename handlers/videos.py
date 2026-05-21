@@ -45,14 +45,13 @@ async def handle_video_callback(callback: types.CallbackQuery) -> None:
     video_path = video_data.get("video", "").strip()
     photo_path = video_data.get("photo", "").strip()
 
-    description = video_data.get("description", "")
     caption = (
-        f"<b>{title}</b>\n\n"
+        f"<b>📹 {title}</b>\n\n"
         f"{description}\n"
         "————————————\n"
         "Rahimov School haqida ko'proq ma'lumot olishni xohlaysizmi?"
     ) if description else (
-        f"<b>{title}</b>\n"
+        f"<b>📹 {title}</b>\n"
         "————————————\n"
         "Rahimov School haqida ko'proq ma'lumot olishni xohlaysizmi?"
     )
