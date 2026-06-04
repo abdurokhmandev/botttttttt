@@ -45,13 +45,13 @@ async def on_startup(dispatcher: Dispatcher) -> None:
     scheduler.add_job(
         check_reminders,
         trigger="interval",
-        minutes=5,
+        minutes=1,
         kwargs={"bot": bot},
         id="reminder_job",
         replace_existing=True,
     )
     scheduler.start()
-    logger.info("✅ Bot started. Reminder scheduler running every 5 minutes.")
+    logger.info("✅ Bot started. Reminder scheduler running every 1 minute.")
 
     # ── Start Web Server for WebApp API ───────────────────────────────────────────
     app = web.Application()

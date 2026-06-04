@@ -64,9 +64,9 @@ async def cmd_start(message: types.Message) -> None:
 
     caption = (
         f"👋 Assalomu alaykum, {first_name}!\n\n"
-        "Rahimov School' xususiy maktabining foydali botiga xush kelibsiz 🎉\n\n"
+        "Rahimov School xususiy maktabining foydali botiga xush kelibsiz 🎉\n\n"
         "Farzand tarbiyasiga doir foydali suhbat va darslarni ushbu botimizdan bepulga olasiz 🔥\n\n"
-        "📝 Quyidagi tugma orqali ro'yxatdan o'tib, bepul darslarni tinglashingiz mumkin:"
+        "👇 Quyidagi <b>📹 Rahimov Suhbatlari</b> tugmasi orqali darslarimizni tinglashingiz mumkin:"
     )
 
     from config import BASE_DIR
@@ -83,7 +83,7 @@ async def cmd_start(message: types.Message) -> None:
                 photo=cached_id,
                 caption=caption,
                 parse_mode="HTML",
-                reply_markup=_build_start_keyboard(),
+                reply_markup=_build_main_reply_keyboard(),
             )
         except Exception:
             WELCOME_PHOTO_CACHE.pop(cover_path, None)
@@ -94,7 +94,7 @@ async def cmd_start(message: types.Message) -> None:
                 photo=InputFile(cover_path),
                 caption=caption,
                 parse_mode="HTML",
-                reply_markup=_build_start_keyboard(),
+                reply_markup=_build_main_reply_keyboard(),
             )
             if sent_msg.photo:
                 WELCOME_PHOTO_CACHE[cover_path] = sent_msg.photo[-1].file_id
@@ -105,10 +105,10 @@ async def cmd_start(message: types.Message) -> None:
         sent_msg = await message.answer(
             text=caption,
             parse_mode="HTML",
-            reply_markup=_build_start_keyboard(),
+            reply_markup=_build_main_reply_keyboard(),
         )
 
-    # Store the message ID for later deletion after registration
+    # Store the message ID for later deletion if registration happens
     state_store.set_metadata(user_id, "reg_message_id", sent_msg.message_id)
 
 
