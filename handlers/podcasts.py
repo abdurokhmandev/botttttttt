@@ -86,34 +86,6 @@ async def show_podcast_list(message: types.Message) -> None:
         reply_markup=_podcast_list_keyboard()
     )
 
-    user_id = message.from_user.id
-    from storage import state_store
-    
-    if user_id not in ADMIN_IDS and state_store.get_state(user_id) != state_store.REGISTERED:
-        # 10 daqiqalik taymerni yangilash
-        state_store.set_state(user_id, state_store.STARTED)
-        
-        from aiogram.types import WebAppInfo
-        if WEBAPP_URL:
-            reg_markup = InlineKeyboardMarkup(inline_keyboard=[[
-                InlineKeyboardButton(
-                    text="📝 Ro'yxatdan o'tish",
-                    web_app=WebAppInfo(url=WEBAPP_URL)
-                )
-            ]])
-        else:
-            reg_markup = InlineKeyboardMarkup(inline_keyboard=[[
-                InlineKeyboardButton(
-                    text="📝 Ro'yxatdan o'tish",
-                    callback_data="start_registration",
-                )
-            ]])
-            
-        await message.answer(
-            "Hurmatli foydalanuvchi, dars va suhbatlarimizdan to'liq foydalanish hamda kelgusi darslarni o'tkazib yubormaslik uchun iltimos, ro'yxatdan o'ting. Bu biz uchun juda muhim! 😊",
-            reply_markup=reg_markup
-        )
-
 
 async def handle_podcast_callback(callback: types.CallbackQuery) -> None:
     """Suhbat tanlanganda audio/video yuborish + avtomatik tugmalar."""
@@ -139,6 +111,14 @@ async def handle_podcast_callback(callback: types.CallbackQuery) -> None:
     if not data:
         await callback.message.answer("⚠️ Suhbat topilmadi.")
         return
+
+    user_id = callback.from_user.id
+    from storage import state_store
+    import time
+    if user_id not in ADMIN_IDS and state_store.get_state(user_id) not in (state_store.REGISTERED, "FIRST_REMINDER_SENT", "SECOND_REMINDER_SENT"):
+        state_store.set_state(user_id, "PODCAST_SELECTED")
+        state_store.set_metadata(user_id, "podcast_selected_ts", time.time())
+
 
     title       = data.get("title", f"Suhbat {idx}")
     description = data.get("description", "")

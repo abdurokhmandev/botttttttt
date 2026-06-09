@@ -11,7 +11,8 @@ DEFAULT_SETTINGS = {
     "phone": "+998781130005",
     "instagram": "instagram.com/rahimovschool",
     "telegram": "t.me/rahimovschool",
-    "youtube": "youtube.com/@rahimovschool"
+    "youtube": "youtube.com/@rahimovschool",
+    "test_accounts": []
 }
 
 def get_settings():

@@ -51,23 +51,29 @@ async def handle_web_app_data(message: types.Message) -> None:
         logger.error("❌ Invalid JSON from WebApp for user %s: %s", user_id, raw)
         data = {}
 
-    sheets.append_row({
-        "name":        data.get("name", ""),
-        "phone":       data.get("phone", ""),
-        "grade":       data.get("grade", ""),
-        "district":    data.get("district", ""),
-        "source":      data.get("source", "WebApp"),
-        "telegram_id": user_id,
-    })
+    from storage import settings_store
+    settings = settings_store.get_settings()
+    test_accounts = settings.get("test_accounts", [])
+    is_test = user_id in test_accounts
+
+    if not is_test:
+        sheets.append_row({
+            "name":        data.get("name", ""),
+            "phone":       data.get("phone", ""),
+            "grade":       data.get("grade", ""),
+            "district":    data.get("district", ""),
+            "source":      data.get("source", "WebApp"),
+            "telegram_id": user_id,
+        })
+        state_store.save_profile(
+            user_id,
+            name=data.get("name", ""),
+            phone=data.get("phone", ""),
+            grade=data.get("grade", ""),
+            district=data.get("district", ""),
+        )
 
     state_store.set_state(user_id, state_store.REGISTERED)
-    state_store.save_profile(
-        user_id,
-        name=data.get("name", ""),
-        phone=data.get("phone", ""),
-        grade=data.get("grade", ""),
-        district=data.get("district", ""),
-    )
 
     markup = InlineKeyboardMarkup(inline_keyboard=[
         [
@@ -103,23 +109,34 @@ async def webapp_api_handler(request: web.Request, bot: Bot) -> web.Response:
     if not user_id:
         return web.json_response({"ok": False, "error": "Missing user_id"}, status=400)
 
-    sheets.append_row({
-        "name":        data.get("name", ""),
-        "phone":       data.get("phone", ""),
-        "grade":       data.get("grade", ""),
-        "district":    data.get("district", ""),
-        "source":      data.get("source", "WebApp"),
-        "telegram_id": user_id,
-    })
+    try:
+        user_id_int = int(user_id)
+    except ValueError:
+        user_id_int = user_id
 
-    state_store.set_state(user_id, state_store.REGISTERED)
-    state_store.save_profile(
-        user_id,
-        name=data.get("name", ""),
-        phone=data.get("phone", ""),
-        grade=data.get("grade", ""),
-        district=data.get("district", ""),
-    )
+    from storage import settings_store
+    settings = settings_store.get_settings()
+    test_accounts = settings.get("test_accounts", [])
+    is_test = user_id_int in test_accounts
+
+    if not is_test:
+        sheets.append_row({
+            "name":        data.get("name", ""),
+            "phone":       data.get("phone", ""),
+            "grade":       data.get("grade", ""),
+            "district":    data.get("district", ""),
+            "source":      data.get("source", "WebApp"),
+            "telegram_id": user_id_int,
+        })
+        state_store.save_profile(
+            user_id_int,
+            name=data.get("name", ""),
+            phone=data.get("phone", ""),
+            grade=data.get("grade", ""),
+            district=data.get("district", ""),
+        )
+
+    state_store.set_state(user_id_int, state_store.REGISTERED)
 
     try:
         markup = InlineKeyboardMarkup(inline_keyboard=[
@@ -152,20 +169,26 @@ async def school_status_callback(callback: types.CallbackQuery):
     user_id = callback.from_user.id
     status = "✅" if callback.data == "school_yes" else "❌"
     
-    # Update local profile
-    profile = state_store.get_profile(user_id)
-    if profile:
-        state_store.save_profile(
-            user_id,
-            name=profile.get("name", ""),
-            phone=profile.get("phone", ""),
-            grade=profile.get("grade", ""),
-            district=profile.get("district", ""),
-            school=status
-        )
+    from storage import settings_store
+    settings = settings_store.get_settings()
+    test_accounts = settings.get("test_accounts", [])
+    is_test = user_id in test_accounts
 
-    # Update Google Sheets
-    sheets.update_school_status(user_id, status)
+    if not is_test:
+        # Update local profile
+        profile = state_store.get_profile(user_id)
+        if profile:
+            state_store.save_profile(
+                user_id,
+                name=profile.get("name", ""),
+                phone=profile.get("phone", ""),
+                grade=profile.get("grade", ""),
+                district=profile.get("district", ""),
+                school=status
+            )
+
+        # Update Google Sheets
+        sheets.update_school_status(user_id, status)
     
     # Delete the question message
     try:

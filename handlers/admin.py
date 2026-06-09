@@ -36,6 +36,9 @@ class DeleteUserStates(StatesGroup):
     SELECT_USER = State()
     CONFIRM = State()
 
+class TestAccountStates(StatesGroup):
+    GET_USER_ID = State()
+
 # ── Keyboards ─────────────────────────────────────────────────────────────────
 
 def _admin_main_keyboard():
@@ -44,11 +47,21 @@ def _admin_main_keyboard():
             [KeyboardButton("📢 Xabar yuborish"), KeyboardButton("👤 Alohida xabar")],
             [KeyboardButton("📊 Statistika"), KeyboardButton("🎬 Video statistika")],
             [KeyboardButton("📋 Ro'yxatdan o'tganlar"), KeyboardButton("⏳ Ro'yxatdan o'tmaganlar")],
-            [KeyboardButton("📹 Suhbat qo'shish")],
+            [KeyboardButton("📹 Suhbat qo'shish"), KeyboardButton("🧪 Test akkauntlar")],
             [KeyboardButton("🗑 Foydalanuvchini o'chirish")],
         ],
         resize_keyboard=True
     )
+
+def _test_accounts_keyboard(accounts: list) -> InlineKeyboardMarkup:
+    buttons = []
+    for uid in accounts:
+        profile = state_store.get_profile(uid)
+        label = f"🗑 {profile['name']} ({uid})" if profile else f"🗑 {uid}"
+        buttons.append([InlineKeyboardButton(text=label, callback_data=f"deltest_{uid}")])
+    buttons.append([InlineKeyboardButton(text="➕ Yangi test akkaunt qo'shish", callback_data="add_test_account")])
+    buttons.append([InlineKeyboardButton(text="❌ Yopish", callback_data="close_test_accounts")])
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 def _audience_keyboard():
     return InlineKeyboardMarkup(inline_keyboard=[
@@ -895,6 +908,101 @@ async def del_confirm(callback: types.CallbackQuery, state: FSMContext):
     )
     await callback.message.answer("🏠 Admin panel:", reply_markup=_admin_main_keyboard())
 
+
+# ── Test Accounts Management ──────────────────────────────────────────────────
+
+async def show_test_accounts(message: types.Message):
+    if message.from_user.id not in ADMIN_IDS:
+        return
+    from storage import settings_store
+    settings = settings_store.get_settings()
+    accounts = settings.get("test_accounts", [])
+    
+    text = (
+        "🧪 <b>Test Akkauntlar Ro'yxati</b>\n\n"
+        "Ushbu ro'yxatdagi foydalanuvchilar ro'yxatdan o'tsalar ham:\n"
+        "1. Google Sheets jadvaliga yozilmaydi.\n"
+        "2. Profil ma'lumotlari bazada saqlanmaydi.\n"
+        "3. Har safar <code>/start</code> buyrug'ini yuborganda, holati avtomatik o'chirilib, qaytadan ro'yxatdan o'tish imkoniyati beriladi.\n\n"
+        "<i>O'chirish uchun ro'yxatdagi akkaunt tugmasini bosing:</i>"
+    )
+    await message.answer(text, parse_mode="HTML", reply_markup=_test_accounts_keyboard(accounts))
+
+
+async def test_accounts_callback_handler(callback: types.CallbackQuery, state: FSMContext):
+    if callback.from_user.id not in ADMIN_IDS:
+        await callback.answer()
+        return
+        
+    from storage import settings_store
+    settings = settings_store.get_settings()
+    accounts = settings.get("test_accounts", [])
+    
+    if callback.data == "close_test_accounts":
+        await callback.message.delete()
+        await callback.answer()
+        return
+        
+    if callback.data == "add_test_account":
+        await callback.answer()
+        await TestAccountStates.GET_USER_ID.set()
+        await callback.message.answer(
+            "➕ <b>Yangi test akkaunt qo'shish</b>\n\n"
+            "Foydalanuvchining Telegram ID raqamini yuboring:\n"
+            "<i>(Eslatma: ID faqat raqamlardan iborat bo'lishi kerak. Masalan: 123456789)</i>\n"
+            "Bekor qilish uchun /cancel deb yozing.",
+            parse_mode="HTML"
+        )
+        return
+        
+    if callback.data.startswith("deltest_"):
+        uid = int(callback.data.split("_")[1])
+        if uid in accounts:
+            accounts.remove(uid)
+            settings["test_accounts"] = accounts
+            settings_store.save_settings(settings)
+            await callback.answer("✅ Test akkaunt ro'yxatdan o'chirildi", show_alert=True)
+            await callback.message.edit_reply_markup(reply_markup=_test_accounts_keyboard(accounts))
+        else:
+            await callback.answer("⚠️ Akkaunt topilmadi")
+
+
+async def add_test_account_id(message: types.Message, state: FSMContext):
+    if message.from_user.id not in ADMIN_IDS:
+        return
+        
+    if message.text.startswith("/cancel"):
+        await state.finish()
+        await message.answer("❌ Bekor qilindi.", reply_markup=_admin_main_keyboard())
+        return
+        
+    text = message.text.strip()
+    if not text.isdigit():
+        await message.answer("❌ Xato! Telegram ID faqat raqamlardan iborat bo'lishi kerak. Qaytadan urinib ko'ring yoki /cancel deb yozing.")
+        return
+        
+    uid = int(text)
+    from storage import settings_store
+    settings = settings_store.get_settings()
+    accounts = settings.get("test_accounts", [])
+    
+    if uid in accounts:
+        await message.answer("⚠️ Bu akkaunt allaqachon test akkauntlar ro'yxatida bor.")
+        await state.finish()
+        return
+        
+    accounts.append(uid)
+    settings["test_accounts"] = accounts
+    settings_store.save_settings(settings)
+    
+    await state.finish()
+    await message.answer(
+        f"✅ Telegram ID: <code>{uid}</code> test akkauntlar ro'yxatiga muvaffaqiyatli qo'shildi!",
+        parse_mode="HTML",
+        reply_markup=_admin_main_keyboard()
+    )
+
+
 # ── Registration ───────────────────────────────────────────────────────────────
 
 def register_admin_handlers(dp: Dispatcher):
@@ -906,6 +1014,15 @@ def register_admin_handlers(dp: Dispatcher):
     dp.register_message_handler(start_broadcast, lambda m: m.text == "📢 Xabar yuborish", state="*")
     dp.register_message_handler(start_direct_message, lambda m: m.text == "👤 Alohida xabar", state="*")
     dp.register_message_handler(start_delete_user, lambda m: m.text == "🗑 Foydalanuvchini o'chirish", state="*")
+
+    # Test accounts
+    dp.register_message_handler(show_test_accounts, lambda m: m.text == "🧪 Test akkauntlar", state="*")
+    dp.register_callback_query_handler(
+        test_accounts_callback_handler,
+        lambda c: c.data and (c.data in ("add_test_account", "close_test_accounts") or c.data.startswith("deltest_")),
+        state="*"
+    )
+    dp.register_message_handler(add_test_account_id, state=TestAccountStates.GET_USER_ID)
 
     # Broadcast FSM
     dp.register_callback_query_handler(set_target, state=BroadcastStates.SELECT_AUDIENCE)

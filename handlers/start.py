@@ -26,21 +26,56 @@ class RegForm(StatesGroup):
     district = State()
 
 
-def _build_start_keyboard():
-    if WEBAPP_URL:
-        return InlineKeyboardMarkup(inline_keyboard=[[
-            InlineKeyboardButton(
-                text="📝 Ro'yxatdan o'tish",
-                web_app=WebAppInfo(url=WEBAPP_URL)
+def _build_start_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text="Podcast", callback_data="start_podcast"),
+            InlineKeyboardButton(text="kofe", callback_data="start_kofe")
+        ]
+    ])
+
+
+async def cb_start_buttons(callback: types.CallbackQuery) -> None:
+    await callback.answer()
+    
+    from handlers.podcasts import _podcast_list_text, _podcast_list_keyboard
+    from config import PODCASTS
+    
+    if not PODCASTS:
+        await callback.message.answer("📹 Hozircha suhbatlar mavjud emas. Tez orada qo'shiladi!")
+        return
+        
+    text = (
+        "🎧 <b>Qaysi darsni tinglamoqchisiz?</b>\n\n"
+        f"{_podcast_list_text()}"
+    )
+    
+    try:
+        if callback.message.caption:
+            await callback.message.edit_caption(
+                caption=text,
+                reply_markup=_podcast_list_keyboard(),
+                parse_mode="HTML"
             )
-        ]])
-    else:
-        return InlineKeyboardMarkup(inline_keyboard=[[
-            InlineKeyboardButton(
-                text="📝 Register via Chat",
-                callback_data="start_registration",
+        else:
+            await callback.message.edit_text(
+                text=text,
+                reply_markup=_podcast_list_keyboard(),
+                parse_mode="HTML"
             )
-        ]])
+    except Exception as e:
+        logger.error(f"Error editing welcome message: {e}")
+        await callback.message.answer(
+            text=text,
+            reply_markup=_podcast_list_keyboard(),
+            parse_mode="HTML"
+        )
+        
+    from handlers.webapp import _build_main_reply_keyboard
+    await callback.message.answer(
+        "Quyidagi menyu orqali darslar va boshqa bo'limlarni tanlashingiz mumkin:",
+        reply_markup=_build_main_reply_keyboard()
+    )
 
 
 async def cmd_start(message: types.Message) -> None:
@@ -51,8 +86,16 @@ async def cmd_start(message: types.Message) -> None:
     from config import ADMIN_IDS
     from handlers.webapp import _build_main_reply_keyboard
 
+    from storage import settings_store
+    settings = settings_store.get_settings()
+    test_accounts = settings.get("test_accounts", [])
+    is_test = user_id in test_accounts
+
+    if is_test:
+        state_store.delete_user(user_id)
+
     # Agar foydalanuvchi admin bo'lsa yoki oldin ro'yxatdan o'tgan bo'lsa
-    if user_id in ADMIN_IDS or state_store.get_state(user_id) == state_store.REGISTERED:
+    elif user_id in ADMIN_IDS or state_store.get_state(user_id) == state_store.REGISTERED:
         await message.answer(
             f"👋 Assalomu alaykum, {first_name}!\n\n"
             "Asosiy menyuga xush kelibsiz. Quyidagi bo'limlardan birini tanlang:",
@@ -66,7 +109,7 @@ async def cmd_start(message: types.Message) -> None:
         f"👋 Assalomu alaykum, {first_name}!\n\n"
         "Rahimov School xususiy maktabining foydali botiga xush kelibsiz 🎉\n\n"
         "Farzand tarbiyasiga doir foydali suhbat va darslarni ushbu botimizdan bepulga olasiz 🔥\n\n"
-        "👇 Quyidagi <b>📹 Rahimov Suhbatlari</b> tugmasi orqali darslarimizni tinglashingiz mumkin:"
+        "Suhbat va darslarni boshlash uchun quyidagi tugmalardan birini tanlang:"
     )
 
     from config import BASE_DIR
@@ -83,7 +126,7 @@ async def cmd_start(message: types.Message) -> None:
                 photo=cached_id,
                 caption=caption,
                 parse_mode="HTML",
-                reply_markup=_build_main_reply_keyboard(),
+                reply_markup=_build_start_keyboard(),
             )
         except Exception:
             WELCOME_PHOTO_CACHE.pop(cover_path, None)
@@ -94,7 +137,7 @@ async def cmd_start(message: types.Message) -> None:
                 photo=InputFile(cover_path),
                 caption=caption,
                 parse_mode="HTML",
-                reply_markup=_build_main_reply_keyboard(),
+                reply_markup=_build_start_keyboard(),
             )
             if sent_msg.photo:
                 WELCOME_PHOTO_CACHE[cover_path] = sent_msg.photo[-1].file_id
@@ -105,7 +148,7 @@ async def cmd_start(message: types.Message) -> None:
         sent_msg = await message.answer(
             text=caption,
             parse_mode="HTML",
-            reply_markup=_build_main_reply_keyboard(),
+            reply_markup=_build_start_keyboard(),
         )
 
     # Store the message ID for later deletion if registration happens
@@ -148,25 +191,29 @@ async def reg_get_district(message: types.Message, state: FSMContext) -> None:
         data["district"] = message.text.strip()
         reg_data = dict(data)
 
-    user_id = message.from_user.id
-    
-    sheets.append_row({
-        "name":        reg_data.get("name", ""),
-        "phone":       reg_data.get("phone", ""),
-        "grade":       reg_data.get("grade", ""),
-        "district":    reg_data.get("district", ""),
-        "source":      "Chat Registration",
-        "telegram_id": user_id,
-    })
+    from storage import settings_store
+    settings = settings_store.get_settings()
+    test_accounts = settings.get("test_accounts", [])
+    is_test = user_id in test_accounts
+
+    if not is_test:
+        sheets.append_row({
+            "name":        reg_data.get("name", ""),
+            "phone":       reg_data.get("phone", ""),
+            "grade":       reg_data.get("grade", ""),
+            "district":    reg_data.get("district", ""),
+            "source":      "Chat Registration",
+            "telegram_id": user_id,
+        })
+        state_store.save_profile(
+            user_id,
+            name=reg_data.get("name", ""),
+            phone=reg_data.get("phone", ""),
+            grade=reg_data.get("grade", ""),
+            district=reg_data.get("district", "")
+        )
 
     state_store.set_state(user_id, state_store.REGISTERED)
-    state_store.save_profile(
-        user_id,
-        name=reg_data.get("name", ""),
-        phone=reg_data.get("phone", ""),
-        grade=reg_data.get("grade", ""),
-        district=reg_data.get("district", "")
-    )
     await state.finish()
 
     await message.answer(
@@ -192,6 +239,7 @@ async def reg_get_district(message: types.Message, state: FSMContext) -> None:
 
 def register_start_handler(dp: Dispatcher) -> None:
     dp.register_message_handler(cmd_start, commands=["start"])
+    dp.register_callback_query_handler(cb_start_buttons, lambda c: c.data in ("start_podcast", "start_kofe"), state="*")
 
     if not WEBAPP_URL:
         dp.register_callback_query_handler(cb_start_registration, text="start_registration", state="*")
