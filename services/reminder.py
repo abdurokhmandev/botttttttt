@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 
 REMINDER_DELAY = 10 * 60
 SECOND_REMINDER_DELAY = 24 * 60 * 60
+THIRD_REMINDER_DELAY = 48 * 60 * 60
 
 
 def _build_register_keyboard() -> InlineKeyboardMarkup:
@@ -37,7 +38,7 @@ def _eligible_for_first_reminder(state: str | None) -> bool:
 async def check_reminders(bot: Bot) -> None:
     now = time.time()
     all_users = state_store.get_all()
-    pending_first = pending_second = 0
+    pending_first = pending_second = pending_third = 0
 
     for user_id, entry in all_users.items():
         if entry.get("blocked"):
@@ -67,8 +68,8 @@ async def check_reminders(bot: Bot) -> None:
                 state_store.set_metadata(user_id, "first_reminder_sent_ts", time.time())
                 logger.info("⏰ First reminder sent to user %s", user_id)
             except Exception as e:
-                from aiogram.utils import exceptions
-                if isinstance(e, (exceptions.BotBlocked, exceptions.UserDeactivated)):
+                from aiogram.exceptions import TelegramForbiddenError
+                if isinstance(e, TelegramForbiddenError):
                     logger.warning("🚫 User %s blocked or deleted. Skipping.", user_id)
                     state_store.set_metadata(user_id, "blocked", True)
                 else:
@@ -95,18 +96,51 @@ async def check_reminders(bot: Bot) -> None:
                     reply_markup=_build_register_keyboard(),
                 )
                 state_store.set_state(user_id, state_store.SECOND_REMINDER_SENT)
+                state_store.set_metadata(user_id, "second_reminder_sent_ts", time.time())
                 logger.info("⏰ Second reminder sent to user %s", user_id)
             except Exception as e:
-                from aiogram.utils import exceptions
-                if isinstance(e, (exceptions.BotBlocked, exceptions.UserDeactivated)):
+                from aiogram.exceptions import TelegramForbiddenError
+                if isinstance(e, TelegramForbiddenError):
                     logger.warning("🚫 User %s blocked or deleted. Skipping.", user_id)
                     state_store.set_metadata(user_id, "blocked", True)
                 else:
                     logger.error("❌ Failed to send second reminder to user %s: %s", user_id, e)
 
-    if pending_first or pending_second:
+        elif state == state_store.SECOND_REMINDER_SENT:
+            sent_ts = state_store.get_metadata(user_id, "second_reminder_sent_ts")
+            if not sent_ts:
+                sent_ts = entry.get("ts", now)
+
+            elapsed = now - sent_ts
+            if elapsed < THIRD_REMINDER_DELAY:
+                pending_third += 1
+                continue
+
+            try:
+                await bot.send_message(
+                    chat_id=user_id,
+                    text=(
+                        "Assalomu alaykum! Ro'yxatdan o'tib, "
+                        "barcha dars va podkastlardan bepul foydalaning. "
+                        "Kech qolmang! 🎯"
+                    ),
+                    reply_markup=_build_register_keyboard(),
+                )
+                state_store.set_state(user_id, state_store.THIRD_REMINDER_SENT)
+                state_store.set_metadata(user_id, "third_reminder_sent_ts", time.time())
+                logger.info("⏰ Third reminder sent to user %s", user_id)
+            except Exception as e:
+                from aiogram.exceptions import TelegramForbiddenError
+                if isinstance(e, TelegramForbiddenError):
+                    logger.warning("🚫 User %s blocked or deleted. Skipping.", user_id)
+                    state_store.set_metadata(user_id, "blocked", True)
+                else:
+                    logger.error("❌ Failed to send third reminder to user %s: %s", user_id, e)
+
+    if pending_first or pending_second or pending_third:
         logger.info(
-            "⏳ Reminder queue: %d waiting for 10 min, %d waiting for 24 h",
+            "⏳ Reminder queue: %d waiting for 10 min, %d waiting for 24 h, %d waiting for 48 h",
             pending_first,
             pending_second,
+            pending_third,
         )
