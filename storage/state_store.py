@@ -12,6 +12,11 @@ STARTED       = "STARTED"
 REGISTERED    = "REGISTERED"
 REMINDER_SENT = "REMINDER_SENT"
 
+# ── Reminder workflow states ─────────────────────────────────────────────────────
+PODCAST_SELECTED      = "PODCAST_SELECTED"
+FIRST_REMINDER_SENT   = "FIRST_REMINDER_SENT"
+SECOND_REMINDER_SENT  = "SECOND_REMINDER_SENT"
+
 # ── Registered users profile store: {user_id: {name, phone, grade, ...}} ─────
 _profiles: dict[int, dict] = {}
 

@@ -115,9 +115,13 @@ async def handle_podcast_callback(callback: types.CallbackQuery) -> None:
     user_id = callback.from_user.id
     from storage import state_store
     import time
-    if user_id not in ADMIN_IDS and state_store.get_state(user_id) not in (state_store.REGISTERED, "FIRST_REMINDER_SENT", "SECOND_REMINDER_SENT"):
-        state_store.set_state(user_id, "PODCAST_SELECTED")
-        state_store.set_metadata(user_id, "podcast_selected_ts", time.time())
+    if user_id not in ADMIN_IDS and state_store.get_state(user_id) not in (
+            state_store.REGISTERED,
+            state_store.FIRST_REMINDER_SENT,
+            state_store.SECOND_REMINDER_SENT,
+    ):
+        state_store.set_state(user_id, state_store.PODCAST_SELECTED)
+    state_store.set_metadata(user_id, "podcast_selected_ts", time.time())
 
 
     title       = data.get("title", f"Suhbat {idx}")

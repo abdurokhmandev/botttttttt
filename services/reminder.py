@@ -40,9 +40,10 @@ async def check_reminders(bot: Bot) -> None:
 
     for user_id, entry in all_users.items():
         state = entry.get("state")
+    logger.debug("Reminder check – user:%s state:%s", user_id, state)
 
         # 1. First reminder (10 minutes after podcast selection)
-        if state == "PODCAST_SELECTED":
+        if state == state_store.PODCAST_SELECTED:
             selected_ts = state_store.get_metadata(user_id, "podcast_selected_ts")
             if not selected_ts:
                 selected_ts = entry.get("ts", now)
@@ -57,7 +58,7 @@ async def check_reminders(bot: Bot) -> None:
                     text="Agar ro'yxatdan o'tsangiz sizga har hafta yangi podkastlar jo'natiladi",
                     reply_markup=_build_register_keyboard(),
                 )
-                state_store.set_state(user_id, "FIRST_REMINDER_SENT")
+                state_store.set_state(user_id, state_store.FIRST_REMINDER_SENT)
                 state_store.set_metadata(user_id, "first_reminder_sent_ts", time.time())
                 logger.info("⏰ First reminder sent to user %s", user_id)
             except Exception as e:
@@ -69,7 +70,7 @@ async def check_reminders(bot: Bot) -> None:
                     logger.error("❌ Failed to send first reminder to user %s: %s", user_id, e)
 
         # 2. Second reminder (24 hours after first reminder is sent)
-        elif state == "FIRST_REMINDER_SENT":
+        elif state == state_store.FIRST_REMINDER_SENT:
             sent_ts = state_store.get_metadata(user_id, "first_reminder_sent_ts")
             if not sent_ts:
                 sent_ts = entry.get("ts", now)
@@ -88,7 +89,7 @@ async def check_reminders(bot: Bot) -> None:
                     ),
                     reply_markup=_build_register_keyboard(),
                 )
-                state_store.set_state(user_id, "SECOND_REMINDER_SENT")
+                state_store.set_state(user_id, state_store.SECOND_REMINDER_SENT)
                 logger.info("⏰ Second reminder (24h) sent to user %s", user_id)
             except Exception as e:
                 from aiogram.utils import exceptions
