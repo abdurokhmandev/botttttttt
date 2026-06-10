@@ -29,6 +29,7 @@ logger = logging.getLogger(__name__)
 # ── Bot & Dispatcher ──────────────────────────────────────────────────────────
 bot = Bot(token=BOT_TOKEN, parse_mode=None)
 dp  = Dispatcher(bot, storage=MemoryStorage())
+scheduler: AsyncIOScheduler | None = None
 
 # ── Register Handlers ─────────────────────────────────────────────────────────
 register_webapp_handler(dp)   # WebApp data — eng birinchi (state='*' bilan)
@@ -41,6 +42,7 @@ register_admin_handlers(dp)
 
 # ── Scheduler ─────────────────────────────────────────────────────────────────
 async def on_startup(dispatcher: Dispatcher) -> None:
+    global scheduler
     scheduler = AsyncIOScheduler()
     scheduler.add_job(
         check_reminders,
@@ -49,6 +51,8 @@ async def on_startup(dispatcher: Dispatcher) -> None:
         kwargs={"bot": bot},
         id="reminder_job",
         replace_existing=True,
+        misfire_grace_time=120,
+        coalesce=True,
     )
     scheduler.start()
     logger.info("✅ Bot started. Reminder scheduler running every 1 minute.")

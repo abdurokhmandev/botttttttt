@@ -103,6 +103,20 @@ async def cmd_start(message: types.Message) -> None:
         )
         return
 
+    current_state = state_store.get_state(user_id)
+    reminder_states = (
+        state_store.PODCAST_SELECTED,
+        state_store.FIRST_REMINDER_SENT,
+        state_store.SECOND_REMINDER_SENT,
+    )
+    if current_state in reminder_states:
+        await message.answer(
+            f"👋 Assalomu alaykum, {first_name}!\n\n"
+            "Suhbat va darslarni tanlash uchun quyidagi tugmalardan foydalaning:",
+            reply_markup=_build_start_keyboard(),
+        )
+        return
+
     state_store.set_state(user_id, state_store.STARTED)
 
     caption = (
@@ -190,6 +204,8 @@ async def reg_get_district(message: types.Message, state: FSMContext) -> None:
     async with state.proxy() as data:
         data["district"] = message.text.strip()
         reg_data = dict(data)
+
+    user_id = message.from_user.id
 
     from storage import settings_store
     settings = settings_store.get_settings()
