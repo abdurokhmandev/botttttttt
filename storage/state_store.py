@@ -10,13 +10,9 @@ PROFILES_FILE_PATH = os.path.join(os.path.dirname(STATE_FILE_PATH), "profiles.js
 # ── States ───────────────────────────────────────────────────────────────────
 STARTED       = "STARTED"
 REGISTERED    = "REGISTERED"
-REMINDER_SENT = "REMINDER_SENT"
 
-# ── Reminder workflow states ─────────────────────────────────────────────────────
+# ── Funnel workflow states ───────────────────────────────────────────────────────
 PODCAST_SELECTED      = "PODCAST_SELECTED"
-FIRST_REMINDER_SENT   = "FIRST_REMINDER_SENT"
-SECOND_REMINDER_SENT  = "SECOND_REMINDER_SENT"
-THIRD_REMINDER_SENT   = "THIRD_REMINDER_SENT"
 
 # ── Video funnel states ───────────────────────────────────────────────────────────
 VIDEO_SENT            = "VIDEO_SENT"           # Video yuborildi, 30 daqiqa kutilmoqda

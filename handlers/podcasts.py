@@ -119,11 +119,7 @@ async def handle_podcast_callback(callback: types.CallbackQuery) -> None:
     current_state = state_store.get_state(user_id)
     came_from_funnel = (current_state == state_store.WANT_MORE_ASKED)
 
-    if user_id not in ADMIN_IDS and current_state not in (
-            state_store.REGISTERED,
-            state_store.FIRST_REMINDER_SENT,
-            state_store.SECOND_REMINDER_SENT,
-    ):
+    if user_id not in ADMIN_IDS and current_state != state_store.REGISTERED:
         state_store.set_state(user_id, state_store.PODCAST_SELECTED)
     state_store.set_metadata(user_id, "podcast_selected_ts", time.time())
 
