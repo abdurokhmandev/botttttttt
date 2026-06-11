@@ -9,9 +9,13 @@ from storage import state_store
 
 logger = logging.getLogger(__name__)
 
-REMINDER_DELAY = 10 * 60
-SECOND_REMINDER_DELAY = 24 * 60 * 60
-THIRD_REMINDER_DELAY = 48 * 60 * 60
+REMINDER_DELAY        = 10 * 60       # 10 daqiqa (birinchi eslatma)
+SECOND_REMINDER_DELAY = 24 * 60 * 60  # 24 soat
+THIRD_REMINDER_DELAY  = 48 * 60 * 60  # 48 soat
+VIDEO_WATCH_DELAY     = 30 * 60       # 30 daqiqa (video ko'rish kutish)
+SNOOZE_15_DELAY       = 15 * 60       # 15 daqiqa
+SNOOZE_60_DELAY       = 60 * 60       # 1 soat
+SNOOZE_TOMORROW_DELAY = 24 * 60 * 60  # 1 kun
 
 
 def _build_register_keyboard() -> InlineKeyboardMarkup:
@@ -46,6 +50,7 @@ async def check_reminders(bot: Bot) -> None:
 
         state = entry.get("state")
 
+        # ── 1. Eski eslatmalar (ro'yxatdan o'tmagan) ─────────────────────────
         if _eligible_for_first_reminder(state):
             if state == state_store.STARTED and not state_store.get_metadata(user_id, "podcast_selected_ts"):
                 continue
@@ -136,6 +141,66 @@ async def check_reminders(bot: Bot) -> None:
                     state_store.set_metadata(user_id, "blocked", True)
                 else:
                     logger.error("❌ Failed to send third reminder to user %s: %s", user_id, e)
+
+        # ── 2. Video ko'rish — 30 daqiqa kutish ──────────────────────────────
+        elif state == state_store.VIDEO_SENT:
+            sent_ts = state_store.get_metadata(user_id, "video_sent_ts")
+            if not sent_ts:
+                continue
+            elapsed = now - sent_ts
+            if elapsed < VIDEO_WATCH_DELAY:
+                continue
+            try:
+                from handlers.funnel import send_watched_question
+                await send_watched_question(bot, user_id)
+                logger.info("⏰ Watched question sent to user %s", user_id)
+            except Exception as e:
+                logger.error("❌ send_watched_question user=%s: %s", user_id, e)
+
+        # ── 3. Snooze — 15 daqiqa ────────────────────────────────────────────
+        elif state == state_store.SNOOZE_15:
+            snooze_ts = state_store.get_metadata(user_id, "snooze_ts")
+            if not snooze_ts or (now - snooze_ts) < SNOOZE_15_DELAY:
+                continue
+            try:
+                from handlers.funnel import _resend_last_video
+                await _resend_last_video(bot, user_id)
+                logger.info("⏰ Snooze-15 video resent to user %s", user_id)
+            except Exception as e:
+                logger.error("❌ Snooze-15 user=%s: %s", user_id, e)
+
+        # ── 4. Snooze — 1 soat ────────────────────────────────────────────────
+        elif state == state_store.SNOOZE_60:
+            snooze_ts = state_store.get_metadata(user_id, "snooze_ts")
+            if not snooze_ts or (now - snooze_ts) < SNOOZE_60_DELAY:
+                continue
+            try:
+                from handlers.funnel import _resend_last_video
+                await _resend_last_video(bot, user_id)
+                logger.info("⏰ Snooze-60 video resent to user %s", user_id)
+            except Exception as e:
+                logger.error("❌ Snooze-60 user=%s: %s", user_id, e)
+
+        # ── 5. Snooze — ertaga ────────────────────────────────────────────────
+        elif state == state_store.SNOOZE_TOMORROW:
+            snooze_ts = state_store.get_metadata(user_id, "snooze_ts")
+            if not snooze_ts or (now - snooze_ts) < SNOOZE_TOMORROW_DELAY:
+                continue
+            try:
+                from handlers.funnel import _resend_last_video
+                await _resend_last_video(bot, user_id)
+                logger.info("⏰ Snooze-tomorrow video resent to user %s", user_id)
+            except Exception as e:
+                logger.error("❌ Snooze-tomorrow user=%s: %s", user_id, e)
+
+        # ── 6. "Yoqdimi?" savoli yuborildi — WANT_MORE holatida ──────────────
+        elif state == state_store.WANT_MORE_ASKED:
+            # Foydalanuvchi podkast tanlashini kutmoqdamiz — boshqa amal yo'q
+            pass
+
+        # ── 7. Ro'yxatdan o'tish holati — kutish ─────────────────────────────
+        elif state == state_store.REGISTER_OFFERED:
+            pass
 
     if pending_first or pending_second or pending_third:
         logger.info(

@@ -75,28 +75,19 @@ async def handle_web_app_data(message: types.Message) -> None:
 
     state_store.set_state(user_id, state_store.REGISTERED)
 
-    markup = InlineKeyboardMarkup(inline_keyboard=[
-        [
-            InlineKeyboardButton(text="✅ Ha o'qiydi", callback_data="school_yes"),
-            InlineKeyboardButton(text="❌ Yo'q o'qimaydi", callback_data="school_no")
-        ]
-    ])
-    await message.answer(
-        text="🏫 Bolangiz Rahimov School'da o'qiydimi?",
-        reply_markup=markup
-    )
-
     # Ro'yxatdan o'tish taklifnomasi xabarini o'chirish
     try:
-        # 1. Foydalanuvchi yuborgan ma'lumot xabarini o'chiramiz
         await message.delete()
-        
-        # 2. Bot yuborgan taklifnoma xabarini o'chiramiz
         reg_msg_id = state_store.get_metadata(user_id, "reg_message_id")
         if reg_msg_id:
             await message.bot.delete_message(message.chat.id, reg_msg_id)
     except Exception:
         pass
+
+    # Funnel: "Rahmat" + 10 sek + maktab savoli
+    import asyncio
+    from handlers.funnel import on_registered
+    asyncio.create_task(on_registered(message.bot, user_id))
 
 
 async def webapp_api_handler(request: web.Request, bot: Bot) -> web.Response:
@@ -138,21 +129,10 @@ async def webapp_api_handler(request: web.Request, bot: Bot) -> web.Response:
 
     state_store.set_state(user_id_int, state_store.REGISTERED)
 
-    try:
-        markup = InlineKeyboardMarkup(inline_keyboard=[
-            [
-                InlineKeyboardButton(text="✅ Ha o'qiydi", callback_data="school_yes"),
-                InlineKeyboardButton(text="❌ Yo'q o'qimaydi", callback_data="school_no")
-            ]
-        ])
-        await bot.send_message(
-            chat_id=user_id,
-            text="🏫 Bolangiz Rahimov School'da o'qiydimi?",
-            reply_markup=markup
-        )
-    except Exception as e:
-        logger.error("Failed to send school question to user %s: %s", user_id, e)
-        return web.json_response({"ok": False, "error": "Failed to send message"}, status=500)
+    # Funnel: "Rahmat" + 10 sek + maktab savoli
+    import asyncio
+    from handlers.funnel import on_registered
+    asyncio.create_task(on_registered(bot, user_id_int))
 
     # Ro'yxatdan o'tish taklifnomasi xabarini o'chirish
     reg_msg_id = data.get("message_id") or state_store.get_metadata(user_id, "reg_message_id")

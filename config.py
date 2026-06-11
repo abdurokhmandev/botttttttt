@@ -19,6 +19,7 @@ ADMIN_IDS: list[int] = [
     int(i.strip()) for i in os.getenv("ADMIN_IDS", "").split(",") if i.strip()
 ]
 ADMIN_PASSWORD: str = os.getenv("ADMIN_PASSWORD", "admin123")
+LEAD_GROUP_ID: int | None = int(os.getenv("LEAD_GROUP_ID", "0")) or None
 
 # ── School ───────────────────────────────────────────────────────────────────
 SCHOOL_INFO: str = os.getenv(

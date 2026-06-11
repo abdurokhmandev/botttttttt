@@ -115,7 +115,11 @@ async def handle_podcast_callback(callback: types.CallbackQuery) -> None:
     user_id = callback.from_user.id
     from storage import state_store
     import time
-    if user_id not in ADMIN_IDS and state_store.get_state(user_id) not in (
+
+    current_state = state_store.get_state(user_id)
+    came_from_funnel = (current_state == state_store.WANT_MORE_ASKED)
+
+    if user_id not in ADMIN_IDS and current_state not in (
             state_store.REGISTERED,
             state_store.FIRST_REMINDER_SENT,
             state_store.SECOND_REMINDER_SENT,
@@ -154,18 +158,40 @@ async def handle_podcast_callback(callback: types.CallbackQuery) -> None:
                     title=title,
                     performer="Rahimov School"
                 )
+            # Video yuborildi — 30 daqiqa kutish boshlaydi
+            state_store.set_state(user_id, state_store.VIDEO_SENT)
+            state_store.set_metadata(user_id, "video_sent_ts", time.time())
+            state_store.set_metadata(user_id, "last_video_idx", idx)
+            if came_from_funnel:
+                import asyncio
+                from handlers.funnel import send_like_question
+                asyncio.create_task(send_like_question(callback.message.bot, user_id))
             return
         except Exception as e:
             logger.error("Suhbat yuborishda xatolik (idx=%d, type=%s): %s", idx, file_type, e)
             # Agar audio deb xato bersa, video qilib ko'ramiz (fallback)
             try:
                 await callback.message.answer_video(video=file_id, caption=caption, parse_mode="HTML", reply_markup=markup)
+                state_store.set_state(user_id, state_store.VIDEO_SENT)
+                state_store.set_metadata(user_id, "video_sent_ts", time.time())
+                state_store.set_metadata(user_id, "last_video_idx", idx)
+                if came_from_funnel:
+                    import asyncio
+                    from handlers.funnel import send_like_question
+                    asyncio.create_task(send_like_question(callback.message.bot, user_id))
                 return
             except:
                 pass
 
     # Faqat matn
     await callback.message.answer(caption, parse_mode="HTML", reply_markup=markup)
+    state_store.set_state(user_id, state_store.VIDEO_SENT)
+    state_store.set_metadata(user_id, "video_sent_ts", time.time())
+    state_store.set_metadata(user_id, "last_video_idx", idx)
+    if came_from_funnel:
+        import asyncio
+        from handlers.funnel import send_like_question
+        asyncio.create_task(send_like_question(callback.message.bot, user_id))
 
 
 # ── Admin: Suhbat qo'shish ───────────────────────────────────────────────────

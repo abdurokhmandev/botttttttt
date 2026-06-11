@@ -16,6 +16,18 @@ REMINDER_SENT = "REMINDER_SENT"
 PODCAST_SELECTED      = "PODCAST_SELECTED"
 FIRST_REMINDER_SENT   = "FIRST_REMINDER_SENT"
 SECOND_REMINDER_SENT  = "SECOND_REMINDER_SENT"
+THIRD_REMINDER_SENT   = "THIRD_REMINDER_SENT"
+
+# ── Video funnel states ───────────────────────────────────────────────────────────
+VIDEO_SENT            = "VIDEO_SENT"           # Video yuborildi, 30 daqiqa kutilmoqda
+VIDEO_WATCHED_ASKED   = "VIDEO_WATCHED_ASKED"  # "Ko'rdingizmi?" savoli yuborildi
+WANT_MORE_ASKED       = "WANT_MORE_ASKED"      # Podkast ro'yxati ko'rsatildi
+LIKE_ASKED            = "LIKE_ASKED"           # "Yoqdimi?" savoli yuborildi
+REGISTER_OFFERED      = "REGISTER_OFFERED"     # Ro'yxatga taklif yuborildi
+SCHOOL_ASKED          = "SCHOOL_ASKED"         # Maktab haqida savol yuborildi
+SNOOZE_15             = "SNOOZE_15"            # 10-15 daqiqada eslatish
+SNOOZE_60             = "SNOOZE_60"            # 1 soatda eslatish
+SNOOZE_TOMORROW       = "SNOOZE_TOMORROW"      # Ertaga eslatish
 
 # ── Registered users profile store: {user_id: {name, phone, grade, ...}} ─────
 _profiles: dict[int, dict] = {}
