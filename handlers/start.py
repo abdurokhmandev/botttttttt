@@ -29,8 +29,8 @@ class RegForm(StatesGroup):
 def _build_start_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
         [
-            InlineKeyboardButton(text="Podcast", callback_data="start_podcast"),
-            InlineKeyboardButton(text="kofe", callback_data="start_kofe")
+            InlineKeyboardButton(text="🫖 Choy", callback_data="start_choy"),
+            InlineKeyboardButton(text="☕️ Kofe", callback_data="start_kofe")
         ]
     ])
 
@@ -120,30 +120,52 @@ async def cmd_start(message: types.Message) -> None:
     state_store.set_state(user_id, state_store.STARTED)
 
     caption = (
-        f"👋 Assalomu alaykum, {first_name}!\n\n"
-        "Rahimov School xususiy maktabining foydali botiga xush kelibsiz 🎉\n\n"
-        "Farzand tarbiyasiga doir foydali suhbat va darslarni ushbu botimizdan bepulga olasiz 🔥\n\n"
-        "Suhbat va darslarni boshlash uchun quyidagi tugmalardan birini tanlang:"
+        "Assalomu alaykum, mehmon!\n\n"
+        "Farzandingizni tarbiya qilishda yordamchi bo'ladigan botimizda sizni ko'rib turganimizdan xursandmiz 😊\n\n"
+        "Odatda mehmonga choy yoki kofe taklif qilinadi ☕️\n\n"
+        "Biz ham choy yoki kofe o'rnida farzandingizni tarbiya qilishda foyda beradigan bilimlar bermoqchimiz. Nima deysiz?\n\n"
+        "Shunday qilib, qay birini tanlaysiz?"
     )
 
     from config import BASE_DIR
     from aiogram.types import InputFile
 
-    cover_path = os.path.join(BASE_DIR, "static", "cover.png")
+    start_dir = os.path.join(BASE_DIR, "static", "start")
+    cover_path = None
+    if os.path.exists(start_dir) and os.path.isdir(start_dir):
+        try:
+            files = os.listdir(start_dir)
+            image_files = [f for f in files if f.lower().endswith(('.png', '.jpg', '.jpeg', '.webp'))]
+            if image_files:
+                cover_path = os.path.join(start_dir, image_files[0])
+        except Exception as e:
+            logger.error("❌ Failed to list files in static/start: %s", e)
+
+    if not cover_path:
+        cover_path = os.path.join(BASE_DIR, "static", "cover.png")
+
     sent_msg = None
 
-    # Try Cache first
-    cached_id = WELCOME_PHOTO_CACHE.get(cover_path)
-    if cached_id:
+    # Try Cache first using path and modification time
+    cache_key = None
+    if os.path.exists(cover_path):
         try:
-            sent_msg = await message.answer_photo(
-                photo=cached_id,
-                caption=caption,
-                parse_mode="HTML",
-                reply_markup=_build_start_keyboard(),
-            )
+            cache_key = f"{cover_path}:{os.path.getmtime(cover_path)}"
         except Exception:
-            WELCOME_PHOTO_CACHE.pop(cover_path, None)
+            cache_key = cover_path
+
+    if cache_key:
+        cached_id = WELCOME_PHOTO_CACHE.get(cache_key)
+        if cached_id:
+            try:
+                sent_msg = await message.answer_photo(
+                    photo=cached_id,
+                    caption=caption,
+                    parse_mode="HTML",
+                    reply_markup=_build_start_keyboard(),
+                )
+            except Exception:
+                WELCOME_PHOTO_CACHE.pop(cache_key, None)
 
     if not sent_msg and os.path.exists(cover_path) and os.path.isfile(cover_path):
         try:
@@ -153,8 +175,8 @@ async def cmd_start(message: types.Message) -> None:
                 parse_mode="HTML",
                 reply_markup=_build_start_keyboard(),
             )
-            if sent_msg.photo:
-                WELCOME_PHOTO_CACHE[cover_path] = sent_msg.photo[-1].file_id
+            if sent_msg.photo and cache_key:
+                WELCOME_PHOTO_CACHE[cache_key] = sent_msg.photo[-1].file_id
         except Exception as e:
             logger.error("❌ Failed to send welcome photo: %s", e)
 
@@ -255,7 +277,7 @@ async def reg_get_district(message: types.Message, state: FSMContext) -> None:
 
 def register_start_handler(dp: Dispatcher) -> None:
     dp.register_message_handler(cmd_start, commands=["start"])
-    dp.register_callback_query_handler(cb_start_buttons, lambda c: c.data in ("start_podcast", "start_kofe"), state="*")
+    dp.register_callback_query_handler(cb_start_buttons, lambda c: c.data in ("start_choy", "start_kofe"), state="*")
 
     if not WEBAPP_URL:
         dp.register_callback_query_handler(cb_start_registration, text="start_registration", state="*")
