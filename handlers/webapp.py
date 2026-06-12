@@ -43,6 +43,9 @@ def _video_list_text() -> str:
 
 async def handle_web_app_data(message: types.Message) -> None:
     user_id = message.from_user.id
+    if state_store.get_state(user_id) == state_store.REGISTERED:
+        logger.info("⚠️ User %s already registered. Ignoring duplicate webapp message.", user_id)
+        return
     raw = message.web_app_data.data
 
     try:
@@ -104,6 +107,10 @@ async def webapp_api_handler(request: web.Request, bot: Bot) -> web.Response:
         user_id_int = int(user_id)
     except ValueError:
         user_id_int = user_id
+
+    if state_store.get_state(user_id_int) == state_store.REGISTERED:
+        logger.info("⚠️ User %s already registered. Ignoring duplicate API call.", user_id_int)
+        return web.json_response({"ok": True})
 
     from storage import settings_store
     settings = settings_store.get_settings()
