@@ -118,8 +118,9 @@ async def handle_podcast_callback(callback: types.CallbackQuery) -> None:
 
     current_state = state_store.get_state(user_id)
     came_from_funnel = (current_state == state_store.WANT_MORE_ASKED)
+    should_track_funnel = (user_id not in ADMIN_IDS and current_state != state_store.REGISTERED)
 
-    if user_id not in ADMIN_IDS and current_state != state_store.REGISTERED:
+    if should_track_funnel:
         state_store.set_state(user_id, state_store.PODCAST_SELECTED)
     state_store.set_metadata(user_id, "podcast_selected_ts", time.time())
 
@@ -155,8 +156,9 @@ async def handle_podcast_callback(callback: types.CallbackQuery) -> None:
                     performer="Rahimov School"
                 )
             # Video yuborildi — 30 daqiqa kutish boshlaydi
-            state_store.set_state(user_id, state_store.VIDEO_SENT)
-            state_store.set_metadata(user_id, "video_sent_ts", time.time())
+            if should_track_funnel:
+                state_store.set_state(user_id, state_store.VIDEO_SENT)
+                state_store.set_metadata(user_id, "video_sent_ts", time.time())
             state_store.set_metadata(user_id, "last_video_idx", idx)
             if came_from_funnel:
                 import asyncio
@@ -168,8 +170,9 @@ async def handle_podcast_callback(callback: types.CallbackQuery) -> None:
             # Agar audio deb xato bersa, video qilib ko'ramiz (fallback)
             try:
                 await callback.message.answer_video(video=file_id, caption=caption, parse_mode="HTML", reply_markup=markup)
-                state_store.set_state(user_id, state_store.VIDEO_SENT)
-                state_store.set_metadata(user_id, "video_sent_ts", time.time())
+                if should_track_funnel:
+                    state_store.set_state(user_id, state_store.VIDEO_SENT)
+                    state_store.set_metadata(user_id, "video_sent_ts", time.time())
                 state_store.set_metadata(user_id, "last_video_idx", idx)
                 if came_from_funnel:
                     import asyncio
@@ -181,8 +184,9 @@ async def handle_podcast_callback(callback: types.CallbackQuery) -> None:
 
     # Faqat matn
     await callback.message.answer(caption, parse_mode="HTML", reply_markup=markup)
-    state_store.set_state(user_id, state_store.VIDEO_SENT)
-    state_store.set_metadata(user_id, "video_sent_ts", time.time())
+    if should_track_funnel:
+        state_store.set_state(user_id, state_store.VIDEO_SENT)
+        state_store.set_metadata(user_id, "video_sent_ts", time.time())
     state_store.set_metadata(user_id, "last_video_idx", idx)
     if came_from_funnel:
         import asyncio

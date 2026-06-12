@@ -114,9 +114,9 @@ def _kb_snooze():
     ])
 
 
-def _kb_snooze_remind(delay_cb: str):
+def _kb_snooze_remind(btn_text: str, delay_cb: str):
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton("Eslatib qo'ying ⏰", callback_data=delay_cb)],
+        [InlineKeyboardButton(btn_text, callback_data=delay_cb)],
         [InlineKeyboardButton("Hozir ko'raman 👀", callback_data="funnel_snooze_now_watch")],
     ])
 
@@ -158,14 +158,10 @@ async def cb_yes_watched(callback: types.CallbackQuery) -> None:
         f"{_podcast_list_text()}"
     )
     try:
-        if callback.message.photo or callback.message.caption:
-            await callback.message.edit_caption(caption=text, parse_mode="HTML",
-                                                 reply_markup=_podcast_list_keyboard())
-        else:
-            await callback.message.edit_text(text=text, parse_mode="HTML",
-                                              reply_markup=_podcast_list_keyboard())
+        await callback.message.delete()
     except Exception:
-        await callback.message.answer(text, parse_mode="HTML", reply_markup=_podcast_list_keyboard())
+        pass
+    await callback.message.answer(text, parse_mode="HTML", reply_markup=_podcast_list_keyboard())
 
     state_store.set_state(user_id, state_store.WANT_MORE_ASKED)
 
@@ -351,7 +347,7 @@ async def cb_school_no(callback: types.CallbackQuery) -> None:
 
 # ── Snooze handlers ───────────────────────────────────────────────────────────
 
-async def _send_snooze_info(callback: types.CallbackQuery, delay_label: str, delay_cb: str) -> None:
+async def _send_snooze_info(callback: types.CallbackQuery, btn_text: str, delay_cb: str) -> None:
     """Snooze tanlanganda ma'lumot xabari va 2 tugma chiqaradi."""
     await callback.answer()
     user_id = callback.from_user.id
@@ -365,18 +361,15 @@ async def _send_snooze_info(callback: types.CallbackQuery, delay_label: str, del
         if desc:
             lesson_info = f"\n\nBu darsni ko'rib siz quyidagi savollarga yechim topasiz:\n{desc}"
 
-    text = (
-        f"Qaroringizdan xursandmiz.{lesson_info}\n\n"
-        f"Sizga {delay_label} eslatib qo'yamizmi?"
-    )
+    text = f"Qaroringizdan xursandmiz.{lesson_info}"
     try:
         if callback.message.photo or callback.message.caption:
             await callback.message.edit_caption(
-                caption=text, reply_markup=_kb_snooze_remind(delay_cb))
+                caption=text, reply_markup=_kb_snooze_remind(btn_text, delay_cb))
         else:
-            await callback.message.edit_text(text=text, reply_markup=_kb_snooze_remind(delay_cb))
+            await callback.message.edit_text(text=text, reply_markup=_kb_snooze_remind(btn_text, delay_cb))
     except Exception:
-        await callback.message.answer(text, reply_markup=_kb_snooze_remind(delay_cb))
+        await callback.message.answer(text, reply_markup=_kb_snooze_remind(btn_text, delay_cb))
 
 
 async def cb_snooze_now(callback: types.CallbackQuery) -> None:
@@ -391,19 +384,19 @@ async def cb_snooze_now(callback: types.CallbackQuery) -> None:
 
 
 async def cb_snooze_15(callback: types.CallbackQuery) -> None:
-    await _send_snooze_info(callback, "10-15 daqiqada", "funnel_remind_15")
+    await _send_snooze_info(callback, "10-15 daqiqada eslating 🕗", "funnel_remind_15")
     state_store.set_state(callback.from_user.id, state_store.SNOOZE_15)
     state_store.set_metadata(callback.from_user.id, "snooze_ts", time.time())
 
 
 async def cb_snooze_60(callback: types.CallbackQuery) -> None:
-    await _send_snooze_info(callback, "1 soatdan keyin", "funnel_remind_60")
+    await _send_snooze_info(callback, "1 soatdan keyin eslating ⏳", "funnel_remind_60")
     state_store.set_state(callback.from_user.id, state_store.SNOOZE_60)
     state_store.set_metadata(callback.from_user.id, "snooze_ts", time.time())
 
 
 async def cb_snooze_tomorrow(callback: types.CallbackQuery) -> None:
-    await _send_snooze_info(callback, "ertaga", "funnel_remind_tomorrow")
+    await _send_snooze_info(callback, "Ertaga eslating ➡️", "funnel_remind_tomorrow")
     state_store.set_state(callback.from_user.id, state_store.SNOOZE_TOMORROW)
     state_store.set_metadata(callback.from_user.id, "snooze_ts", time.time())
 
