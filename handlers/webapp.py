@@ -68,13 +68,14 @@ async def handle_web_app_data(message: types.Message) -> None:
             "source":      data.get("source", "WebApp"),
             "telegram_id": user_id,
         })
-        state_store.save_profile(
-            user_id,
-            name=data.get("name", ""),
-            phone=data.get("phone", ""),
-            grade=data.get("grade", ""),
-            district=data.get("district", ""),
-        )
+        
+    state_store.save_profile(
+        user_id,
+        name=data.get("name", ""),
+        phone=data.get("phone", ""),
+        grade=data.get("grade", ""),
+        district=data.get("district", ""),
+    )
 
     state_store.set_state(user_id, state_store.REGISTERED)
 
@@ -126,13 +127,14 @@ async def webapp_api_handler(request: web.Request, bot: Bot) -> web.Response:
             "source":      data.get("source", "WebApp"),
             "telegram_id": user_id_int,
         })
-        state_store.save_profile(
-            user_id_int,
-            name=data.get("name", ""),
-            phone=data.get("phone", ""),
-            grade=data.get("grade", ""),
-            district=data.get("district", ""),
-        )
+        
+    state_store.save_profile(
+        user_id_int,
+        name=data.get("name", ""),
+        phone=data.get("phone", ""),
+        grade=data.get("grade", ""),
+        district=data.get("district", ""),
+    )
 
     state_store.set_state(user_id_int, state_store.REGISTERED)
 
