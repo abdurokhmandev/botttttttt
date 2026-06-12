@@ -203,6 +203,11 @@ async def send_like_question(bot: Bot, user_id: int) -> None:
         logger.error("❌ send_like_question user=%s: %s", user_id, e)
 
 
+async def cb_like_yes(callback: types.CallbackQuery) -> None:
+    """Ha — ro'yxatga taklif."""
+    await callback.answer()
+    user_id = callback.from_user.id
+
     # If already registered, skip register offer and go straight to school info
     if state_store.get_state(user_id) == state_store.REGISTERED or state_store.get_profile(user_id) is not None:
         try:
