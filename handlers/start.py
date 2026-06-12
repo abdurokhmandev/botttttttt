@@ -60,8 +60,9 @@ async def cb_start_buttons(callback: types.CallbackQuery) -> None:
         await callback.message.answer("📹 Hozircha suhbatlar mavjud emas. Tez orada qo'shiladi!")
         return
         
+    emoji_choice = "🫖 Choy" if callback.data == "start_choy" else "☕️ Kofe"
     text = (
-        "<b>🫖 Choy / ☕️ Kofe o'rnida quyidagi qaysi darslardan qay birini tinglamoqchisiz?</b>\n\n"
+        f"<b>{emoji_choice} o'rnida quyidagi qaysi darslardan qay birini tinglamoqchisiz?</b>\n\n"
         f"{_podcast_list_text()}"
     )
     
