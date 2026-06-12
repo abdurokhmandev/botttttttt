@@ -134,7 +134,7 @@ async def send_watched_question(bot: Bot, user_id: int) -> None:
             ),
             markup=_kb_watched(),
         )
-        state_store.set_state(user_id, state_store.VIDEO_WATCHED_ASKED)
+        state_store.set_metadata(user_id, "funnel_state", state_store.VIDEO_WATCHED_ASKED)
     except Exception as e:
         logger.error("❌ send_watched_question user=%s: %s", user_id, e)
 
@@ -163,7 +163,7 @@ async def cb_yes_watched(callback: types.CallbackQuery) -> None:
         pass
     await callback.message.answer(text, parse_mode="HTML", reply_markup=_podcast_list_keyboard())
 
-    state_store.set_state(user_id, state_store.WANT_MORE_ASKED)
+    state_store.set_metadata(user_id, "funnel_state", state_store.WANT_MORE_ASKED)
 
 
 async def cb_no_watched(callback: types.CallbackQuery) -> None:
@@ -180,7 +180,7 @@ async def cb_no_watched(callback: types.CallbackQuery) -> None:
     except Exception:
         await callback.message.answer(text, reply_markup=_kb_snooze())
 
-    state_store.set_state(user_id, state_store.SNOOZE_15)
+    state_store.set_metadata(user_id, "funnel_state", state_store.SNOOZE_15)
 
 
 # ── "Yoqdimi?" — podkast tanlanib bo'lgandan keyin yuboriladi ────────────────
@@ -198,15 +198,19 @@ async def send_like_question(bot: Bot, user_id: int) -> None:
             ),
             markup=_kb_like(),
         )
-        state_store.set_state(user_id, state_store.LIKE_ASKED)
+        state_store.set_metadata(user_id, "funnel_state", state_store.LIKE_ASKED)
     except Exception as e:
         logger.error("❌ send_like_question user=%s: %s", user_id, e)
 
 
-async def cb_like_yes(callback: types.CallbackQuery) -> None:
-    """Ha — ro'yxatga taklif."""
-    await callback.answer()
-    user_id = callback.from_user.id
+    # If already registered, skip register offer and go straight to school info
+    if state_store.get_state(user_id) == state_store.REGISTERED or state_store.get_profile(user_id) is not None:
+        try:
+            await callback.message.delete()
+        except Exception:
+            pass
+        asyncio.create_task(on_registered(callback.message.bot, user_id))
+        return
 
     text = (
         "Kelishdik, biz yap-yangi darslarimiz chiqqan eng birinchi sizni "
@@ -227,7 +231,7 @@ async def cb_like_yes(callback: types.CallbackQuery) -> None:
             markup=_kb_register(),
         )
 
-    state_store.set_state(user_id, state_store.REGISTER_OFFERED)
+    state_store.set_metadata(user_id, "funnel_state", state_store.REGISTER_OFFERED)
 
 
 async def cb_like_no(callback: types.CallbackQuery) -> None:
@@ -253,12 +257,12 @@ async def on_registered(bot: Bot, user_id: int) -> None:
                 "Yangi darslarimizni kuting."
             ),
         )
-        state_store.set_state(user_id, state_store.SCHOOL_ASKED)
+        state_store.set_metadata(user_id, "funnel_state", state_store.SCHOOL_ASKED)
 
         await asyncio.sleep(10)
 
         # 10 sek keyin maktab savoli
-        if state_store.get_state(user_id) == state_store.SCHOOL_ASKED:
+        if state_store.get_metadata(user_id, "funnel_state") == state_store.SCHOOL_ASKED:
             await _send_photo_or_text(
                 bot, user_id,
                 folder="school_ask",
@@ -335,14 +339,14 @@ async def cb_school_yes(callback: types.CallbackQuery) -> None:
         except Exception:
             pass
 
-    state_store.set_state(user_id, state_store.REGISTERED)
+    state_store.set_metadata(user_id, "funnel_state", "FINISHED")
 
 
 async def cb_school_no(callback: types.CallbackQuery) -> None:
     """Yo'q — rahmat."""
     await callback.answer()
     await callback.message.answer("Rahmat, bizni kuzatishda davom eting 😊")
-    state_store.set_state(callback.from_user.id, state_store.REGISTERED)
+    state_store.set_metadata(callback.from_user.id, "funnel_state", "FINISHED")
 
 
 # ── Snooze handlers ───────────────────────────────────────────────────────────
@@ -385,19 +389,19 @@ async def cb_snooze_now(callback: types.CallbackQuery) -> None:
 
 async def cb_snooze_15(callback: types.CallbackQuery) -> None:
     await _send_snooze_info(callback, "10-15 daqiqada eslating 🕗", "funnel_remind_15")
-    state_store.set_state(callback.from_user.id, state_store.SNOOZE_15)
+    state_store.set_metadata(callback.from_user.id, "funnel_state", state_store.SNOOZE_15)
     state_store.set_metadata(callback.from_user.id, "snooze_ts", time.time())
 
 
 async def cb_snooze_60(callback: types.CallbackQuery) -> None:
     await _send_snooze_info(callback, "1 soatdan keyin eslating ⏳", "funnel_remind_60")
-    state_store.set_state(callback.from_user.id, state_store.SNOOZE_60)
+    state_store.set_metadata(callback.from_user.id, "funnel_state", state_store.SNOOZE_60)
     state_store.set_metadata(callback.from_user.id, "snooze_ts", time.time())
 
 
 async def cb_snooze_tomorrow(callback: types.CallbackQuery) -> None:
     await _send_snooze_info(callback, "Ertaga eslating ➡️", "funnel_remind_tomorrow")
-    state_store.set_state(callback.from_user.id, state_store.SNOOZE_TOMORROW)
+    state_store.set_metadata(callback.from_user.id, "funnel_state", state_store.SNOOZE_TOMORROW)
     state_store.set_metadata(callback.from_user.id, "snooze_ts", time.time())
 
 
@@ -461,14 +465,14 @@ async def _resend_last_video(bot: Bot, user_id: int) -> None:
                     title=title, performer="Rahimov School", reply_markup=markup
                 )
             # 30 daqiqa kutishni qayta boshlash
-            state_store.set_state(user_id, state_store.VIDEO_SENT)
+            state_store.set_metadata(user_id, "funnel_state", state_store.VIDEO_SENT)
             state_store.set_metadata(user_id, "video_sent_ts", time.time())
             return
         except Exception as e:
             logger.error("❌ _resend_last_video user=%s: %s", user_id, e)
 
     await bot.send_message(user_id, caption, parse_mode="HTML", reply_markup=markup)
-    state_store.set_state(user_id, state_store.VIDEO_SENT)
+    state_store.set_metadata(user_id, "funnel_state", state_store.VIDEO_SENT)
     state_store.set_metadata(user_id, "video_sent_ts", time.time())
 
 

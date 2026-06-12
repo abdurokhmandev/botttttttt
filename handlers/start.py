@@ -150,8 +150,8 @@ async def cmd_start(message: types.Message) -> None:
     if is_test:
         state_store.delete_user(user_id)
 
-    # Agar foydalanuvchi admin bo'lsa yoki oldin ro'yxatdan o'tgan bo'lsa
-    elif user_id in ADMIN_IDS or state_store.get_state(user_id) == state_store.REGISTERED:
+    # Agar foydalanuvchi oldin ro'yxatdan o'tgan bo'lsa
+    elif state_store.get_state(user_id) == state_store.REGISTERED or state_store.get_profile(user_id) is not None:
         await message.answer(
             f"👋 Assalomu alaykum, {first_name}!\n\n"
             "Asosiy menyuga xush kelibsiz. Quyidagi bo'limlardan birini tanlang:",
@@ -309,8 +309,19 @@ async def reg_get_district(message: types.Message, state: FSMContext) -> None:
     asyncio.create_task(on_registered(message.bot, user_id))
 
 
+async def cmd_reset(message: types.Message) -> None:
+    user_id = message.from_user.id
+    state_store.delete_user(user_id)
+    state_store.set_metadata(user_id, "funnel_state", None)
+    state_store.set_metadata(user_id, "video_sent_ts", None)
+    state_store.set_metadata(user_id, "snooze_ts", None)
+    await message.answer("🔄 Barcha holatlaringiz o'chirildi va tozalandi!")
+    await cmd_start(message)
+
+
 def register_start_handler(dp: Dispatcher) -> None:
     dp.register_message_handler(cmd_start, commands=["start"])
+    dp.register_message_handler(cmd_reset, commands=["reset"])
     dp.register_callback_query_handler(cb_start_buttons, lambda c: c.data in ("start_choy", "start_kofe"), state="*")
 
     if not WEBAPP_URL:

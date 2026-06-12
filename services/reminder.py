@@ -21,10 +21,10 @@ async def check_reminders(bot: Bot) -> None:
         if entry.get("blocked"):
             continue
 
-        state = entry.get("state")
+        funnel_state = state_store.get_metadata(user_id, "funnel_state")
 
         # ── 1. Video ko'rish — 30 daqiqa kutish ──────────────────────────────
-        if state == state_store.VIDEO_SENT:
+        if funnel_state == state_store.VIDEO_SENT:
             sent_ts = state_store.get_metadata(user_id, "video_sent_ts")
             if not sent_ts:
                 continue
@@ -39,7 +39,7 @@ async def check_reminders(bot: Bot) -> None:
                 logger.error("❌ send_watched_question user=%s: %s", user_id, e)
 
         # ── 2. Snooze — 15 daqiqa ────────────────────────────────────────────
-        elif state == state_store.SNOOZE_15:
+        elif funnel_state == state_store.SNOOZE_15:
             snooze_ts = state_store.get_metadata(user_id, "snooze_ts")
             if not snooze_ts or (now - snooze_ts) < SNOOZE_15_DELAY:
                 continue
@@ -51,7 +51,7 @@ async def check_reminders(bot: Bot) -> None:
                 logger.error("❌ Snooze-15 user=%s: %s", user_id, e)
 
         # ── 3. Snooze — 1 soat ────────────────────────────────────────────────
-        elif state == state_store.SNOOZE_60:
+        elif funnel_state == state_store.SNOOZE_60:
             snooze_ts = state_store.get_metadata(user_id, "snooze_ts")
             if not snooze_ts or (now - snooze_ts) < SNOOZE_60_DELAY:
                 continue
@@ -63,7 +63,7 @@ async def check_reminders(bot: Bot) -> None:
                 logger.error("❌ Snooze-60 user=%s: %s", user_id, e)
 
         # ── 4. Snooze — ertaga ────────────────────────────────────────────────
-        elif state == state_store.SNOOZE_TOMORROW:
+        elif funnel_state == state_store.SNOOZE_TOMORROW:
             snooze_ts = state_store.get_metadata(user_id, "snooze_ts")
             if not snooze_ts or (now - snooze_ts) < SNOOZE_TOMORROW_DELAY:
                 continue

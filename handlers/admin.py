@@ -1003,10 +1003,32 @@ async def add_test_account_id(message: types.Message, state: FSMContext):
     )
 
 
+async def cmd_test_group(message: types.Message) -> None:
+    if message.from_user.id not in ADMIN_IDS:
+        return
+
+    from config import LEAD_GROUP_ID
+    if not LEAD_GROUP_ID:
+        await message.answer("⚠️ LEAD_GROUP_ID o'rnatilmagan yoki 0 deb berilgan (Hozirgi qiymat: None/0).")
+        return
+
+    await message.answer(f"🔍 LEAD_GROUP_ID={LEAD_GROUP_ID} ga sinov xabari yuborilmoqda...")
+    try:
+        await message.bot.send_message(
+            chat_id=LEAD_GROUP_ID,
+            text=f"🔔 <b>GURUH BILAN BOG'LANISH SINAB KO'RILDI!</b>\n\nBot ushbu guruhga muvaffaqiyatli xabar yubora oladi ✅",
+            parse_mode="HTML"
+        )
+        await message.answer("✅ Muvaffaqiyatli yuborildi! Guruhni tekshiring.")
+    except Exception as e:
+        await message.answer(f"❌ Xatolik yuz berdi: <code>{str(e)}</code>", parse_mode="HTML")
+
+
 # ── Registration ───────────────────────────────────────────────────────────────
 
 def register_admin_handlers(dp: Dispatcher):
     dp.register_message_handler(cmd_admin, commands=["admin"], state="*")
+    dp.register_message_handler(cmd_test_group, commands=["testgroup"], state="*")
     dp.register_message_handler(show_stats, lambda m: m.text == "📊 Statistika", state="*")
     dp.register_message_handler(show_video_stats, lambda m: m.text == "🎬 Video statistika", state="*")
     dp.register_message_handler(show_registered_users, lambda m: m.text == "📋 Ro'yxatdan o'tganlar", state="*")
