@@ -307,14 +307,20 @@ async def cb_school_yes(callback: types.CallbackQuery) -> None:
     tg_user = callback.from_user
     username = f"@{tg_user.username}" if tg_user.username else f"ID: {user_id}"
 
+    import html
+    name_esc = html.escape(str(name))
+    phone_esc = html.escape(str(phone))
+    grade_esc = html.escape(str(grade))
+    username_esc = html.escape(str(username))
+
     # Admin guruhiga lead yuborish
     if LEAD_GROUP_ID:
         lead_text = (
             "🔔 <b>YANGI LEAD — Rahimov School — E'TIBOR BERING!</b>\n\n"
-            f"👤 {name}\n"
-            f"📱 {username}\n"
-            f"☎️ {phone}\n"
-            f"🏫 Sinf: {grade}\n\n"
+            f"👤 {name_esc}\n"
+            f"📱 {username_esc}\n"
+            f"☎️ {phone_esc}\n"
+            f"🏫 Sinf: {grade_esc}\n\n"
             "Iltimos, mijoz bilan bog'laning."
         )
         try:
@@ -331,10 +337,10 @@ async def cb_school_yes(callback: types.CallbackQuery) -> None:
         try:
             lead_text_admin = (
                 "🔔 <b>YANGI LEAD — Rahimov School</b>\n\n"
-                f"👤 {name}\n"
-                f"📱 {username}\n"
-                f"☎️ {phone}\n"
-                f"🏫 Sinf: {grade}"
+                f"👤 {name_esc}\n"
+                f"📱 {username_esc}\n"
+                f"☎️ {phone_esc}\n"
+                f"🏫 Sinf: {grade_esc}"
             )
             await callback.message.bot.send_message(
                 chat_id=admin_id,
