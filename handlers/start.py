@@ -284,13 +284,14 @@ async def reg_get_district(message: types.Message, state: FSMContext) -> None:
             "source":      "Chat Registration",
             "telegram_id": user_id,
         })
-        state_store.save_profile(
-            user_id,
-            name=reg_data.get("name", ""),
-            phone=reg_data.get("phone", ""),
-            grade=reg_data.get("grade", ""),
-            district=reg_data.get("district", "")
-        )
+        
+    state_store.save_profile(
+        user_id,
+        name=reg_data.get("name", ""),
+        phone=reg_data.get("phone", ""),
+        grade=reg_data.get("grade", ""),
+        district=reg_data.get("district", "")
+    )
 
     state_store.set_state(user_id, state_store.REGISTERED)
     await state.finish()
