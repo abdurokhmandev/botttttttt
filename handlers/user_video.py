@@ -127,6 +127,32 @@ def _kb_sinf():
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
+# ── Podkast yuborilgandan keyin 3 sekund o'tib chaqiriladi ───────────────────
+async def send_ilmli_message(bot, user_id: int) -> None:
+    """Podkast yuborilgandan 3 sekund o'tib img11 + tugma yuboradi."""
+    await asyncio.sleep(3)
+
+    text = (
+        "Video farzandingizni tarbiyasida katta foyda beradi degan umiddamiz ✨\n\n"
+        "Aytgancha, bizda yana farzand tarbiyasiga doir 10+ foydali darsimiz bor. Unda:\n\n"
+        "• Bolalarni o'qishga qiziqtirish yo'llari\n"
+        "• Tarbiya uchun vaqt yetmayotgan ota-onalarga maslahatlar\n"
+        "• Aytganni qilmaydigan bola bilan qanday ishlash kerak?\n"
+        "• Farzandga to'g'ri o'qituvchi tanlash\n\n"
+        "kabi muammolarga yechim berganmiz.\n\n"
+        "🎧 Bu hali hammasi emas, biz bu botda har hafta yangi dars yuboramiz.\n\n"
+        "Va bularning barchasi mutlaqo bepul 😇\n\n"
+        "Istasangiz, sizga ham bu podkastlar ro'yxatini yuborib, har hafta yangi dars "
+        "chiqqanda xabar berib turishimiz mumkin.\n\n"
+        'Buning uchun 1 daqiqa ajratib, botimizdagi "Ilmli ota-onalar" safiga '
+        "qo'shilsangiz kifoya:"
+    )
+    try:
+        await _send(bot, user_id, "img11", text, _kb_join())
+    except Exception as e:
+        logger.error("send_ilmli_message xato user=%s: %s", user_id, e)
+
+
 # ── 1. Foydalanuvchi video yubordi ───────────────────────────────────────────
 async def handle_user_video(message: types.Message):
     """Foydalanuvchi video yuborganda 3 sekund kutib javob beradi."""
