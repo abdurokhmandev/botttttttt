@@ -249,39 +249,24 @@ async def cb_like_no(callback: types.CallbackQuery) -> None:
 
 async def on_registered(bot: Bot, user_id: int) -> None:
     """
-    Foydalanuvchi ro'yxatdan o'tganda chaqiriladi.
-    'Rahmat' xabari + 10 sek kutib maktab savoli yuboriladi.
+    Foydalanuvchi WebApp orqali ro'yxatdan o'tganda chaqiriladi.
+    img22 + "Rahmat" xabari + "Darslar ro'yxatini olish" tugmasi yuboriladi.
     """
     try:
+        from handlers.user_video import _kb_get_list
         await _send_photo_or_text(
             bot, user_id,
-            folder="registered",
+            folder="img22",
             text=(
-                "Rahmat, mehmon. Endi siz bizning farzand tarbiyasi haqida "
-                "qayg'uradigan ota-onalar jamoamizga qo'shildingiz. "
+                "🎉 Rahmat, mehmon. Endi siz bizning farzand tarbiyasi haqida "
+                "qayg'uradigan \"Ilmli ota-onalar\" jamoamizga qo'shildingiz. "
                 "Yangi darslarimizni kuting."
             ),
+            markup=_kb_get_list(),
         )
-        state_store.set_metadata(user_id, "funnel_state", state_store.SCHOOL_ASKED)
-
-        await asyncio.sleep(10)
-
-        # 10 sek keyin maktab savoli
-        if state_store.get_metadata(user_id, "funnel_state") == state_store.SCHOOL_ASKED:
-            await _send_photo_or_text(
-                bot, user_id,
-                folder="school_ask",
-                text=(
-                    "Aytgancha, sizga ushbu darslarni o'tib berayotgan Aziz "
-                    "Rahimovning maktablari — Rahimov School haqida "
-                    "eshitganmisiz? Agar farzandingizga maktab qidiryotgan "
-                    "bo'lsangiz, Rahimov School haqida ma'lumot berishimiz mumkin."
-                ),
-                markup=_kb_school(),
-            )
+        state_store.set_metadata(user_id, "funnel_state", "REGISTERED_LIST_OFFERED")
     except Exception as e:
         logger.error("❌ on_registered user=%s: %s", user_id, e)
-
 
 async def cb_school_yes(callback: types.CallbackQuery) -> None:
     """Ha, maktab haqida ma'lumot kerak — school info + lead guruhiga."""
