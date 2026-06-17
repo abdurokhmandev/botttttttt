@@ -1,19 +1,19 @@
 """
 handlers/user_video.py
 
-Foydalanuvchi o'zi video yuborganda ishlaydigan oqim:
-
-1. Video qabul qilinadi
-2. 3 soniya kutiladi  
-3. Rasm + caption + "Ilmli ota-onalar safiga qo'shilish" tugmasi
-4. Tugma → tasdiq + "Ro'yxatini olish" tugmasi
-5. Ro'yxat → 9 ta dars tugmalari
-6. 3 ta dars bosilganda → maktab taklifi
-7. Ha → contact → sinf → operatorga lead
-8. Yo'q → rahmat
+"Ilmli ota-onalar" oqimi:
+1. Podkast yuborilgandan 3 soniya o'tib img11 + "qo'shilish" tugmasi (WebApp)
+2. WebApp orqali ro'yxatdan o'tilgandan keyin (funnel.on_registered orqali) →
+   img22 "Rahmat" + "Darslar ro'yxatini olish" tugmasi
+3. Tugma → img33 + 9 ta dars tugmalari
+4. 3 ta dars bosilganda → img44 maktab taklifi
+5. Ha → agar profil (telefon) mavjud bo'lsa to'g'ridan-to'g'ri lead,
+       aks holda contact + sinf so'rab keyin lead
+6. Yo'q → rahmat
 """
 
 import asyncio
+import html as _html
 import logging
 import os
 
@@ -25,12 +25,10 @@ from aiogram.types import (
     InputFile, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove,
 )
 
-from config import BASE_DIR, LEAD_GROUP_ID, ADMIN_IDS
+from config import BASE_DIR, LEAD_GROUP_ID, ADMIN_IDS, WEBAPP_URL
+from storage import state_store
 
 logger = logging.getLogger(__name__)
-
-# ── In-memory: foydalanuvchi bosgan darslar ──────────────────────────────────
-_user_watched: dict[int, set] = {}
 
 # ── Darslar ro'yxati ──────────────────────────────────────────────────────────
 LESSONS = [
@@ -51,13 +49,13 @@ SINF_LIST = [
 ]
 
 
-# ── FSM ───────────────────────────────────────────────────────────────────────
+# ── FSM (faqat profil topilmaganda zaxira yo'l uchun) ────────────────────────
 class UserVideoFlow(StatesGroup):
     waiting_contact = State()
     waiting_sinf    = State()
 
 
-# ── Yordamchi: rasm yo'li ─────────────────────────────────────────────────────
+# ── Yordamchi: rasm yo'li (static/{folder}/ ICHIDAGI birinchi rasm) ──────────
 def _img(folder: str) -> str | None:
     d = os.path.join(BASE_DIR, "static", folder)
     if os.path.isdir(d):
@@ -83,6 +81,15 @@ async def _send(bot, chat_id: int, folder: str, text: str, markup=None):
 
 # ── Tugmalar ──────────────────────────────────────────────────────────────────
 def _kb_join():
+    """Ilmli ota-onalar safiga qo'shilish — haqiqiy WebApp ro'yxatdan o'tish."""
+    if WEBAPP_URL:
+        return InlineKeyboardMarkup(inline_keyboard=[[
+            InlineKeyboardButton(
+                "📝 Ilmli ota-onalar safiga qo'shilish",
+                web_app=types.WebAppInfo(url=WEBAPP_URL),
+            )
+        ]])
+    # WEBAPP_URL sozlanmagan bo'lsa — zaxira (haqiqiy ro'yxatdan o'tish bo'lmaydi)
     return InlineKeyboardMarkup(inline_keyboard=[[
         InlineKeyboardButton(
             "📝 Ilmli ota-onalar safiga qo'shilish",
@@ -115,8 +122,7 @@ def _kb_school():
 
 
 def _kb_sinf():
-    rows = []
-    row  = []
+    rows, row = [], []
     for sinf in SINF_LIST:
         row.append(InlineKeyboardButton(sinf, callback_data=f"uv_sinf_{sinf}"))
         if len(row) == 3:
@@ -127,11 +133,37 @@ def _kb_sinf():
     return InlineKeyboardMarkup(inline_keyboard=rows)
 
 
-# ── Podkast yuborilgandan keyin 3 sekund o'tib chaqiriladi ───────────────────
-async def send_ilmli_message(bot, user_id: int) -> None:
-    """Podkast yuborilgandan 3 sekund o'tib img11 + tugma yuboradi."""
-    await asyncio.sleep(3)
+# ── Lead yuborish (ham profil orqali, ham contact/sinf orqali ishlatiladi) ───
+async def _send_school_lead(bot, chat_id: int, name: str, phone: str, grade: str, username: str) -> None:
+    await bot.send_message(
+        chat_id,
+        "Birozdan so'ng, operatorlarimiz sizga maktabimiz haqida to'liq ma'lumot "
+        "berish uchun qo'ng'iroq qiladi 📞",
+        reply_markup=ReplyKeyboardRemove(),
+    )
+    lead = (
+        "🔔 <b>YANGI LEAD — Rahimov School — E'TIBOR BERING!</b>\n\n"
+        f"👤 {_html.escape(str(name))}\n"
+        f"📱 {_html.escape(str(username))}\n"
+        f"☎️ {_html.escape(str(phone))}\n"
+        f"🏫 Sinf: {_html.escape(str(grade))}\n\n"
+        "Iltimos, mijoz bilan bog'laning."
+    )
+    if LEAD_GROUP_ID:
+        try:
+            await bot.send_message(LEAD_GROUP_ID, lead, parse_mode="HTML")
+        except Exception as e:
+            logger.error("Lead guruhiga yuborishda xato: %s", e)
+    for admin_id in ADMIN_IDS:
+        try:
+            await bot.send_message(admin_id, lead, parse_mode="HTML")
+        except Exception as e:
+            logger.error("Adminga yuborishda xato %s: %s", admin_id, e)
 
+
+# ── Podkast yuborilgandan keyin 3 sekund o'tib chaqiriladi (ro'yxatdan o'tmagan foydalanuvchilar uchun) ─
+async def send_ilmli_message(bot, user_id: int) -> None:
+    await asyncio.sleep(3)
     text = (
         "Video farzandingizni tarbiyasida katta foyda beradi degan umiddamiz ✨\n\n"
         "Aytgancha, bizda yana farzand tarbiyasiga doir 10+ foydali darsimiz bor. Unda:\n\n"
@@ -153,12 +185,10 @@ async def send_ilmli_message(bot, user_id: int) -> None:
         logger.error("send_ilmli_message xato user=%s: %s", user_id, e)
 
 
-# ── 1. Foydalanuvchi video yubordi ───────────────────────────────────────────
+# ── (Ixtiyoriy) foydalanuvchi o'zi video yuborganda ───────────────────────────
 async def handle_user_video(message: types.Message):
-    """Foydalanuvchi video yuborganda 3 sekund kutib javob beradi."""
     logger.info("📹 Video qabul qilindi user_id=%s", message.from_user.id)
     await asyncio.sleep(3)
-
     text = (
         "Video farzandingizni tarbiyasida katta foyda beradi degan umiddamiz ✨\n\n"
         "Aytgancha, bizda yana farzand tarbiyasiga doir 10+ foydali darsimiz bor. Unda:\n\n"
@@ -174,14 +204,12 @@ async def handle_user_video(message: types.Message):
         'Buning uchun 1 daqiqa ajratib, botimizdagi "Ilmli ota-onalar" safiga '
         "qo'shilsangiz kifoya:"
     )
+    await _send(message.bot, message.chat.id, "img11", text, _kb_join())
 
-    await _send(message.bot, message.chat.id, "start", text, _kb_join())
 
-
-# ── 2. "Ilmli ota-onalar" tugmasi ─────────────────────────────────────────────
+# ── Zaxira: WEBAPP_URL sozlanmaganda ishlaydigan eski callback ───────────────
 async def cb_uv_join(callback: types.CallbackQuery):
     await callback.answer()
-
     text = (
         "🎉 Rahmat, mehmon. Endi siz bizning farzand tarbiyasi haqida qayg'uradigan "
         '"Ilmli ota-onalar" jamoamizga qo\'shildingiz. Yangi darslarimizni kuting.'
@@ -195,40 +223,55 @@ async def cb_uv_join(callback: types.CallbackQuery):
         await callback.message.answer(text, reply_markup=_kb_get_list())
 
 
-# ── 3. "Ro'yxatini olish" tugmasi ─────────────────────────────────────────────
+# ── "Ro'yxatini olish" tugmasi ─────────────────────────────────────────────
 async def cb_uv_get_list(callback: types.CallbackQuery):
     await callback.answer()
-    await callback.message.answer("Darslar ro'yxati:", reply_markup=_kb_lessons())
+    await _send(callback.message.bot, callback.from_user.id, "img33", "Darslar ro'yxati:", _kb_lessons())
 
 
-# ── 4. Dars tugmasi bosildi ───────────────────────────────────────────────────
+# ── Dars tugmasi bosildi — doimiy xotirada sanaladi ──────────────────────────
 async def cb_uv_lesson(callback: types.CallbackQuery):
     uid = callback.from_user.id
-    num = callback.data.replace("uv_lesson_", "")   # "uv_lesson_3" → "3"
+    num = callback.data.replace("uv_lesson_", "")
 
-    _user_watched.setdefault(uid, set()).add(num)
-    count = len(_user_watched[uid])
+    watched = state_store.get_metadata(uid, "uv_watched_lessons") or []
+    if num not in watched:
+        watched = watched + [num]
+        state_store.set_metadata(uid, "uv_watched_lessons", watched)
 
     await callback.answer(f"✅ {num}-dars tanlandi")
 
-    # 3 ta bosilganda maktab taklifi (har safar emas, faqat birinchi marta 3 ga yetganda)
-    if count == 3:
+    if len(watched) == 3:
         text = (
             "Aytgancha, sizga ushbu darslarni o'tib berayotgan Aziz Rahimovning "
             "maktablari — Rahimov School haqida eshitganmisiz?\n\n"
             "Agar farzandingizga maktab qidiryotgan bo'lsangiz, Rahimov School "
             "haqida ma'lumot berishimiz mumkin."
         )
-        await _send(callback.message.bot, uid, "school_ask", text, _kb_school())
+        await _send(callback.message.bot, uid, "img44", text, _kb_school())
 
 
-# ── 5a. "Ha, maktab kerak" ────────────────────────────────────────────────────
+# ── "Ha, maktab kerak" — avval mavjud profilni tekshiramiz ───────────────────
 async def cb_uv_school_yes(callback: types.CallbackQuery, state: FSMContext):
     await callback.answer()
+    user_id = callback.from_user.id
+    profile = state_store.get_profile(user_id)
 
+    if profile and profile.get("phone"):
+        tg_user = callback.from_user
+        username = f"@{tg_user.username}" if tg_user.username else f"ID: {user_id}"
+        await _send_school_lead(
+            callback.message.bot, user_id,
+            name=profile.get("name") or tg_user.full_name,
+            phone=profile.get("phone", "—"),
+            grade=profile.get("grade", "—"),
+            username=username,
+        )
+        return
+
+    # Zaxira: profil topilmadi — telefon va sinfni so'raymiz
     contact_kb = ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
     contact_kb.add(KeyboardButton("📞 Telefon raqamimni yuborish", request_contact=True))
-
     await callback.message.answer(
         "Yaxshi! Sizga qo'ng'iroq qilishimiz uchun telefon raqamingizni yuboring 👇",
         reply_markup=contact_kb,
@@ -236,67 +279,32 @@ async def cb_uv_school_yes(callback: types.CallbackQuery, state: FSMContext):
     await UserVideoFlow.waiting_contact.set()
 
 
-# ── 5b. Contact keldi → sinf so'ra ───────────────────────────────────────────
 async def got_contact(message: types.Message, state: FSMContext):
     phone = message.contact.phone_number
     async with state.proxy() as d:
         d["phone"]     = phone
         d["full_name"] = message.from_user.full_name
         d["username"]  = message.from_user.username or "username yo'q"
-
-    await message.answer(
-        "Farzandingiz qaysi sinfda o'qiydi?",
-        reply_markup=_kb_sinf(),
-    )
+    await message.answer("Farzandingiz qaysi sinfda o'qiydi?", reply_markup=_kb_sinf())
     await UserVideoFlow.waiting_sinf.set()
 
 
-# ── 5c. Sinf tanlandi → lead yuborish ────────────────────────────────────────
 async def cb_uv_sinf(callback: types.CallbackQuery, state: FSMContext):
     uid  = callback.from_user.id
     sinf = callback.data.replace("uv_sinf_", "")
-
     async with state.proxy() as d:
         phone     = d.get("phone", "noma'lum")
         full_name = d.get("full_name", "noma'lum")
         username  = d.get("username", "username yo'q")
-
     await state.finish()
-
-    # Foydalanuvchiga xabar
-    await callback.message.answer(
-        "Birozdan so'ng, operatorlarimiz sizga maktabimiz haqida to'liq ma'lumot "
-        "berish uchun qo'ng'iroq qiladi 📞",
-        reply_markup=ReplyKeyboardRemove(),
+    await _send_school_lead(
+        callback.message.bot, uid,
+        name=full_name, phone=phone, grade=sinf,
+        username=(f"@{username}" if username != "username yo'q" else "username yo'q"),
     )
-
-    # Operatorga lead
-    import html as _html
-    lead = (
-        "🔔 <b>YANGI LEAD — Rahimov School — E'TIBOR BERING!</b>\n\n"
-        f"👤 {_html.escape(full_name)}\n"
-        f"📱 @{_html.escape(username)}\n"
-        f"☎️ {_html.escape(phone)}\n"
-        f"🏫 Sinf: {_html.escape(sinf)}\n\n"
-        "Iltimos, mijoz bilan bog'laning."
-    )
-
-    if LEAD_GROUP_ID:
-        try:
-            await callback.message.bot.send_message(LEAD_GROUP_ID, lead, parse_mode="HTML")
-        except Exception as e:
-            logger.error("Lead guruhiga yuborishda xato: %s", e)
-
-    for admin_id in ADMIN_IDS:
-        try:
-            await callback.message.bot.send_message(admin_id, lead, parse_mode="HTML")
-        except Exception as e:
-            logger.error("Adminga yuborishda xato %s: %s", admin_id, e)
-
     await callback.answer()
 
 
-# ── 6. "Yo'q, maktab kerak emas" ─────────────────────────────────────────────
 async def cb_uv_school_no(callback: types.CallbackQuery):
     await callback.answer()
     await callback.message.answer("Rahmat, bizni kuzatishda davom eting 😊 @RahimovSchool")
@@ -304,34 +312,24 @@ async def cb_uv_school_no(callback: types.CallbackQuery):
 
 # ── Register ──────────────────────────────────────────────────────────────────
 def register_user_video_handlers(dp: Dispatcher) -> None:
-    # Foydalanuvchi video yuborganda (state='*' — har qanday holatda)
     dp.register_message_handler(
         handle_user_video,
         content_types=["video", "video_note"],
         state="*",
     )
 
-    # Inline callback'lar
+    dp.register_callback_query_handler(cb_uv_join,     lambda c: c.data == "uv_join",       state="*")
+    dp.register_callback_query_handler(cb_uv_get_list, lambda c: c.data == "uv_get_list",   state="*")
     dp.register_callback_query_handler(
-        cb_uv_join,     lambda c: c.data == "uv_join",       state="*")
-    dp.register_callback_query_handler(
-        cb_uv_get_list, lambda c: c.data == "uv_get_list",   state="*")
-    dp.register_callback_query_handler(
-        cb_uv_lesson,
-        lambda c: c.data and c.data.startswith("uv_lesson_"), state="*")
-    dp.register_callback_query_handler(
-        cb_uv_school_yes, lambda c: c.data == "uv_school_yes", state="*")
-    dp.register_callback_query_handler(
-        cb_uv_school_no,  lambda c: c.data == "uv_school_no",  state="*")
+        cb_uv_lesson, lambda c: c.data and c.data.startswith("uv_lesson_"), state="*")
+    dp.register_callback_query_handler(cb_uv_school_yes, lambda c: c.data == "uv_school_yes", state="*")
+    dp.register_callback_query_handler(cb_uv_school_no,  lambda c: c.data == "uv_school_no",  state="*")
 
-    # Sinf — faqat waiting_sinf holatida
     dp.register_callback_query_handler(
         cb_uv_sinf,
         lambda c: c.data and c.data.startswith("uv_sinf_"),
         state=UserVideoFlow.waiting_sinf,
     )
-
-    # Contact — faqat waiting_contact holatida
     dp.register_message_handler(
         got_contact,
         content_types=["contact"],
