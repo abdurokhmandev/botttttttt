@@ -250,24 +250,46 @@ async def cb_like_no(callback: types.CallbackQuery) -> None:
 async def on_registered(bot: Bot, user_id: int) -> None:
     """
     Foydalanuvchi ro'yxatdan o'tganda chaqiriladi.
-    'Rahmat' xabari + 10 sek kutib maktab savoli yuboriladi.
+    Pending funnel holatlarini yopib, podcastlar ro'yxati va reply menu yuboriladi.
     """
     try:
-        await _send_photo_or_text(
-            bot, user_id,
-            folder="registered",
+        from config import PODCASTS
+        from handlers.podcasts import _podcast_list_keyboard, _podcast_list_text
+        from handlers.webapp import _build_main_reply_keyboard
+
+        state_store.clear_funnel_progress(user_id)
+
+        await bot.send_message(
+            chat_id=user_id,
             text=(
                 "Rahmat, mehmon. Endi siz bizning farzand tarbiyasi haqida "
-                "qayg'uradigan ota-onalar jamoamizga qo'shildingiz. "
-                "Yangi darslarimizni kuting."
+                "qayg'uradigan ota-onalar jamoamizga qo'shildingiz.\n\n"
+                "Quyidagi darslardan xohlaganingizni tanlab olishingiz mumkin:"
             ),
         )
-        state_store.set_metadata(user_id, "funnel_state", state_store.SCHOOL_ASKED)
+        if PODCASTS:
+            await bot.send_message(
+                chat_id=user_id,
+                text=(
+                    "🎧 <b>Qaysi darsni tinglamoqchisiz?</b>\n\n"
+                    f"{_podcast_list_text()}"
+                ),
+                parse_mode="HTML",
+                reply_markup=_podcast_list_keyboard(),
+            )
+        else:
+            await bot.send_message(
+                chat_id=user_id,
+                text="📹 Hozircha suhbatlar mavjud emas. Tez orada qo'shiladi!",
+            )
 
-        await asyncio.sleep(10)
+        await bot.send_message(
+            chat_id=user_id,
+            text="Pastdagi menyu orqali darslar va boshqa bo'limlarni tanlashingiz mumkin:",
+            reply_markup=_build_main_reply_keyboard(),
+        )
 
-        # 10 sek keyin maktab savoli
-        if state_store.get_metadata(user_id, "funnel_state") == state_store.SCHOOL_ASKED:
+        if False and PODCASTS:
             await _send_photo_or_text(
                 bot, user_id,
                 folder="school_ask",

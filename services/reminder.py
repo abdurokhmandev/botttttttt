@@ -21,6 +21,11 @@ async def check_reminders(bot: Bot) -> None:
         if entry.get("blocked"):
             continue
 
+        if entry.get("state") == state_store.REGISTERED:
+            if entry.get("funnel_state"):
+                state_store.clear_funnel_progress(user_id)
+            continue
+
         funnel_state = state_store.get_metadata(user_id, "funnel_state")
 
         # ── 1. Video ko'rish — 30 daqiqa kutish ──────────────────────────────

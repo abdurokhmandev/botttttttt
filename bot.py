@@ -105,7 +105,9 @@ async def on_startup(dispatcher: Dispatcher) -> None:
         
         if b_id and u_id:
             from storage.click_store import log_click
+            from storage.event_store import log_event
             log_click(b_id, u_id)
+            log_event(u_id, "broadcast_click", "Broadcast link bosildi", {"broadcast_id": b_id, "url": url or ""})
             
         if not url:
             return web.Response(text="URL topilmadi", status=400)
@@ -114,6 +116,7 @@ async def on_startup(dispatcher: Dispatcher) -> None:
 
     app.router.add_get('/go', serve_redirect)
     app.router.add_get('/webappregister', serve_webappregister)
+    app.router.add_get('/marketingadmin', serve_admin_page)
     app.router.add_get('/marketing-admin', serve_admin_page)
     app.router.add_get('/marketing-admin.html', serve_admin_page)
 

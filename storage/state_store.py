@@ -120,6 +120,22 @@ def get_all() -> dict[int, dict]:
         return dict(_store)
 
 
+def clear_funnel_progress(user_id: int) -> None:
+    """Clear pending funnel/reminder metadata without changing registration state."""
+    with _lock:
+        if user_id not in _store:
+            return
+        for key in (
+            "funnel_state",
+            "video_sent_ts",
+            "snooze_ts",
+            "last_video_idx",
+            "podcast_selected_ts",
+        ):
+            _store[user_id].pop(key, None)
+        _save()
+
+
 def save_profile(user_id: int, name: str, phone: str, grade: str, district: str = "", school: str = "") -> None:
     """Ro'yxatdan o'tgan foydalanuvchi profilini saqlaydi."""
     with _lock:
@@ -174,4 +190,3 @@ def delete_user(user_id: int) -> None:
         if deleted:
             _save()
             _save_profiles()
-

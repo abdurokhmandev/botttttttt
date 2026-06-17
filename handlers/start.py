@@ -10,7 +10,7 @@ from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
 
 from config import WEBAPP_URL
-from storage import state_store
+from storage import event_store, state_store
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +51,12 @@ def _build_start_keyboard() -> InlineKeyboardMarkup:
 
 async def cb_start_buttons(callback: types.CallbackQuery) -> None:
     await callback.answer()
+    event_store.log_event(
+        callback.from_user.id,
+        "start_choice",
+        "Boshlang'ich tanlov bosildi",
+        {"choice": "choy" if callback.data == "start_choy" else "kofe"},
+    )
     
     from handlers.podcasts import _podcast_list_text, _podcast_list_keyboard
     from config import PODCASTS, BASE_DIR
@@ -138,6 +144,7 @@ async def cmd_start(message: types.Message) -> None:
     import os
     user_id = message.from_user.id
     first_name = message.from_user.first_name or "there"
+    event_store.log_event(user_id, "start", "/start bosildi", {"name": message.from_user.full_name})
 
     from config import ADMIN_IDS
     from handlers.webapp import _build_main_reply_keyboard
@@ -234,22 +241,48 @@ async def cmd_start(message: types.Message) -> None:
 
 # ── Chat-based registration flow ─────────────────────────────────────────────
 async def cb_start_registration(callback: types.CallbackQuery, state: FSMContext) -> None:
+    import time
     await callback.answer()
     await RegForm.name.set()
+    event_store.log_event(callback.from_user.id, "registration_started", "Chat ro'yxatdan o'tish boshlandi")
+    state_store.set_metadata(callback.from_user.id, "reg_step_started_ts", time.time())
+    state_store.set_metadata(callback.from_user.id, "reg_step", "name")
     await callback.message.answer("✍️ To'liq ismingizni kiriting:", parse_mode="Markdown")
 
 
 async def reg_get_name(message: types.Message, state: FSMContext) -> None:
+    import time
+    started_ts = state_store.get_metadata(message.from_user.id, "reg_step_started_ts")
+    event_store.log_event(
+        message.from_user.id,
+        "registration_name",
+        "Ism kiritildi",
+        {"value": message.text.strip()},
+        time.time() - started_ts if started_ts else None,
+    )
     async with state.proxy() as data:
         data["name"] = message.text.strip()
     await RegForm.phone.set()
+    state_store.set_metadata(message.from_user.id, "reg_step_started_ts", time.time())
+    state_store.set_metadata(message.from_user.id, "reg_step", "phone")
     await message.answer("📞 Telefon raqamingizni kiriting (masalan: +998901234567):", parse_mode="Markdown")
 
 
 async def reg_get_phone(message: types.Message, state: FSMContext) -> None:
+    import time
+    started_ts = state_store.get_metadata(message.from_user.id, "reg_step_started_ts")
+    event_store.log_event(
+        message.from_user.id,
+        "registration_phone",
+        "Telefon kiritildi",
+        {"value": message.text.strip()},
+        time.time() - started_ts if started_ts else None,
+    )
     async with state.proxy() as data:
         data["phone"] = message.text.strip()
     await RegForm.grade.set()
+    state_store.set_metadata(message.from_user.id, "reg_step_started_ts", time.time())
+    state_store.set_metadata(message.from_user.id, "reg_step", "grade")
     await message.answer("🎓 Qaysi sinfda o'qiysiz? (masalan: 9, 10, 11):", parse_mode="Markdown")
 
 

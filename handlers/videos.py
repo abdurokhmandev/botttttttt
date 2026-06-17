@@ -41,6 +41,7 @@ async def handle_video_callback(callback: types.CallbackQuery) -> None:
         return
 
     title      = video_data.get("title", f"Dars {index}")
+    description = video_data.get("description", "").strip()
     url        = video_data.get("url", "").strip()
     video_path = video_data.get("video", "").strip()
     photo_path = video_data.get("photo", "").strip()
