@@ -156,14 +156,17 @@ async def handle_podcast_callback(callback: types.CallbackQuery) -> None:
                     title=title,
                     performer="Rahimov School"
                 )
-            # Video yuborildi — 30 daqiqa kutish boshlaydi
+            # Video yuborildi — 3 sekund kutib yangi xabar yuboriladi
             state_store.set_metadata(user_id, "funnel_state", state_store.VIDEO_SENT)
             state_store.set_metadata(user_id, "video_sent_ts", time.time())
             state_store.set_metadata(user_id, "last_video_idx", idx)
+            import asyncio
             if came_from_funnel:
-                import asyncio
                 from handlers.funnel import send_like_question
                 asyncio.create_task(send_like_question(callback.message.bot, user_id))
+            else:
+                from handlers.user_video import send_ilmli_message
+                asyncio.create_task(send_ilmli_message(callback.message.bot, user_id))
             return
         except Exception as e:
             logger.error("Suhbat yuborishda xatolik (idx=%d, type=%s): %s", idx, file_type, e)
