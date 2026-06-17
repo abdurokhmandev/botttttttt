@@ -1,16 +1,13 @@
 """
 handlers/user_video.py
 
-Foydalanuvchi o'zi video yuborganda ishlaydigan oqim:
+Foydalanuvchi o'zi video yuborganda ishlaydigan oqim.
 
-1. Video qabul qilinadi
-2. 3 soniya kutiladi  
-3. Rasm + caption + "Ilmli ota-onalar safiga qo'shilish" tugmasi
-4. Tugma → tasdiq + "Ro'yxatini olish" tugmasi
-5. Ro'yxat → 9 ta dars tugmalari
-6. 3 ta dars bosilganda → maktab taklifi
-7. Ha → contact → sinf → operatorga lead
-8. Yo'q → rahmat
+Rasmlar static/ papkasida:
+  img11.jpg — birinchi xabar (video yuborgandan 3 sek o'tib)
+  img22.jpg — "Rahmat, qo'shildingiz" xabari
+  img33.jpg — darslar ro'yxati xabari
+  img44.jpg — maktab taklifi xabari
 """
 
 import asyncio
@@ -57,20 +54,22 @@ class UserVideoFlow(StatesGroup):
     waiting_sinf    = State()
 
 
-# ── Yordamchi: rasm yo'li ─────────────────────────────────────────────────────
-def _img(folder: str) -> str | None:
-    d = os.path.join(BASE_DIR, "static", folder)
-    if os.path.isdir(d):
-        imgs = [f for f in os.listdir(d)
-                if f.lower().endswith((".png", ".jpg", ".jpeg", ".webp"))]
-        if imgs:
-            return os.path.join(d, imgs[0])
+# ── Rasm yordamchisi ──────────────────────────────────────────────────────────
+# Rasmlar static/ papkasida to'g'ridan-to'g'ri joylashadi:
+#   static/img11.jpg, static/img22.jpg, static/img33.jpg, static/img44.jpg
+
+def _img(name: str) -> str | None:
+    """static/imgXX.jpg faylini topadi (jpg, jpeg, png, webp)."""
+    for ext in (".jpg", ".jpeg", ".png", ".webp"):
+        path = os.path.join(BASE_DIR, "static", name + ext)
+        if os.path.isfile(path):
+            return path
     return None
 
 
-async def _send(bot, chat_id: int, folder: str, text: str, markup=None):
+async def _send(bot, chat_id: int, img_name: str, text: str, markup=None):
     """Rasm bo'lsa rasm+caption, bo'lmasa faqat matn yuboradi."""
-    path = _img(folder)
+    path = _img(img_name)
     if path:
         return await bot.send_photo(
             chat_id, InputFile(path),
@@ -110,13 +109,13 @@ def _kb_lessons():
 def _kb_school():
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton("Ha, qidiryapman, ma'lumot bering 💯", callback_data="uv_school_yes")],
-        [InlineKeyboardButton("Yo'q, bizga maktab kerak emas, rahmat 😊",  callback_data="uv_school_no")],
+        [InlineKeyboardButton("Yo'q, bizga maktab kerak emas, rahmat 😊", callback_data="uv_school_no")],
     ])
 
 
 def _kb_sinf():
     rows = []
-    row  = []
+    row = []
     for sinf in SINF_LIST:
         row.append(InlineKeyboardButton(sinf, callback_data=f"uv_sinf_{sinf}"))
         if len(row) == 3:
@@ -129,7 +128,7 @@ def _kb_sinf():
 
 # ── 1. Foydalanuvchi video yubordi ───────────────────────────────────────────
 async def handle_user_video(message: types.Message):
-    """Foydalanuvchi video yuborganda 3 sekund kutib javob beradi."""
+    """Foydalanuvchi video yuborganda 3 sekund kutib img11 bilan javob beradi."""
     await asyncio.sleep(3)
 
     text = (
@@ -148,43 +147,46 @@ async def handle_user_video(message: types.Message):
         "qo'shilsangiz kifoya:"
     )
 
-    await _send(message.bot, message.chat.id, "start", text, _kb_join())
+    # img11 — birinchi xabar rasmi
+    await _send(message.bot, message.chat.id, "img11", text, _kb_join())
 
 
-# ── 2. "Ilmli ota-onalar" tugmasi ─────────────────────────────────────────────
+# ── 2. "Ilmli ota-onalar" tugmasi → img22 ─────────────────────────────────────
 async def cb_uv_join(callback: types.CallbackQuery):
     await callback.answer()
+    uid = callback.from_user.id
 
     text = (
         "🎉 Rahmat, mehmon. Endi siz bizning farzand tarbiyasi haqida qayg'uradigan "
         '"Ilmli ota-onalar" jamoamizga qo\'shildingiz. Yangi darslarimizni kuting.'
     )
-    try:
-        if callback.message.photo or callback.message.caption:
-            await callback.message.edit_caption(caption=text, reply_markup=_kb_get_list())
-        else:
-            await callback.message.edit_text(text=text, reply_markup=_kb_get_list())
-    except Exception:
-        await callback.message.answer(text, reply_markup=_kb_get_list())
+
+    # img22 — yangi xabar sifatida yuboramiz
+    await _send(callback.message.bot, uid, "img22", text, _kb_get_list())
 
 
-# ── 3. "Ro'yxatini olish" tugmasi ─────────────────────────────────────────────
+# ── 3. "Ro'yxatini olish" tugmasi → img33 ─────────────────────────────────────
 async def cb_uv_get_list(callback: types.CallbackQuery):
     await callback.answer()
-    await callback.message.answer("Darslar ro'yxati:", reply_markup=_kb_lessons())
+    uid = callback.from_user.id
+
+    text = "Darslar ro'yxati:"
+
+    # img33 — darslar ro'yxati rasmi bilan
+    await _send(callback.message.bot, uid, "img33", text, _kb_lessons())
 
 
 # ── 4. Dars tugmasi bosildi ───────────────────────────────────────────────────
 async def cb_uv_lesson(callback: types.CallbackQuery):
     uid = callback.from_user.id
-    num = callback.data.replace("uv_lesson_", "")   # "uv_lesson_3" → "3"
+    num = callback.data.replace("uv_lesson_", "")
 
     _user_watched.setdefault(uid, set()).add(num)
     count = len(_user_watched[uid])
 
     await callback.answer(f"✅ {num}-dars tanlandi")
 
-    # 3 ta bosilganda maktab taklifi (har safar emas, faqat birinchi marta 3 ga yetganda)
+    # Faqat birinchi marta 3 ga yetganda maktab taklifi
     if count == 3:
         text = (
             "Aytgancha, sizga ushbu darslarni o'tib berayotgan Aziz Rahimovning "
@@ -192,7 +194,8 @@ async def cb_uv_lesson(callback: types.CallbackQuery):
             "Agar farzandingizga maktab qidiryotgan bo'lsangiz, Rahimov School "
             "haqida ma'lumot berishimiz mumkin."
         )
-        await _send(callback.message.bot, uid, "school_ask", text, _kb_school())
+        # img44 — maktab taklifi rasmi
+        await _send(callback.message.bot, uid, "img44", text, _kb_school())
 
 
 # ── 5a. "Ha, maktab kerak" ────────────────────────────────────────────────────
@@ -277,34 +280,25 @@ async def cb_uv_school_no(callback: types.CallbackQuery):
 
 # ── Register ──────────────────────────────────────────────────────────────────
 def register_user_video_handlers(dp: Dispatcher) -> None:
-    # Foydalanuvchi video yuborganda (state='*' — har qanday holatda)
     dp.register_message_handler(
         handle_user_video,
         content_types=["video", "video_note"],
         state="*",
     )
-
-    # Inline callback'lar
     dp.register_callback_query_handler(
-        cb_uv_join,     lambda c: c.data == "uv_join",       state="*")
+        cb_uv_join,       lambda c: c.data == "uv_join",                            state="*")
     dp.register_callback_query_handler(
-        cb_uv_get_list, lambda c: c.data == "uv_get_list",   state="*")
+        cb_uv_get_list,   lambda c: c.data == "uv_get_list",                        state="*")
     dp.register_callback_query_handler(
-        cb_uv_lesson,
-        lambda c: c.data and c.data.startswith("uv_lesson_"), state="*")
+        cb_uv_lesson,     lambda c: c.data and c.data.startswith("uv_lesson_"),     state="*")
     dp.register_callback_query_handler(
-        cb_uv_school_yes, lambda c: c.data == "uv_school_yes", state="*")
+        cb_uv_school_yes, lambda c: c.data == "uv_school_yes",                      state="*")
     dp.register_callback_query_handler(
-        cb_uv_school_no,  lambda c: c.data == "uv_school_no",  state="*")
-
-    # Sinf — faqat waiting_sinf holatida
+        cb_uv_school_no,  lambda c: c.data == "uv_school_no",                       state="*")
     dp.register_callback_query_handler(
-        cb_uv_sinf,
-        lambda c: c.data and c.data.startswith("uv_sinf_"),
+        cb_uv_sinf,       lambda c: c.data and c.data.startswith("uv_sinf_"),
         state=UserVideoFlow.waiting_sinf,
     )
-
-    # Contact — faqat waiting_contact holatida
     dp.register_message_handler(
         got_contact,
         content_types=["contact"],
