@@ -33,12 +33,12 @@ dp  = Dispatcher(bot, storage=MemoryStorage())
 scheduler: AsyncIOScheduler | None = None
 
 # ── Register Handlers ─────────────────────────────────────────────────────────
-register_webapp_handler(dp)   # WebApp data — eng birinchi (state='*' bilan)
+register_user_video_handlers(dp)  # Birinchi — foydalanuvchi video yuborganda
+register_webapp_handler(dp)       # WebApp data — state='*' bilan
 register_start_handler(dp)
 register_video_handlers(dp)
 register_school_handler(dp)
-register_funnel_handlers(dp) 
-register_user_video_handlers(dp)  # Foydalanuvchi video yuborganda yangi oqim# Funnel — podkastdan oldin
+register_funnel_handlers(dp)
 register_podcast_handlers(dp)
 register_admin_handlers(dp)
 
