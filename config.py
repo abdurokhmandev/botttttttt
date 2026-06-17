@@ -11,6 +11,14 @@ def _require(key: str) -> str:
     return val
 
 
+# ── Lead Group ───────────────────────────────────────────────────────────────
+LEAD_GROUP_ID_RAW = os.getenv("LEAD_GROUP_ID")
+LEAD_GROUP_ID = None
+if LEAD_GROUP_ID_RAW:
+    try:
+        LEAD_GROUP_ID = int(LEAD_GROUP_ID_RAW)
+    except ValueError:
+        LEAD_GROUP_ID = LEAD_GROUP_ID_RAW  # masalan "@guruh_username"
 # ── Core ─────────────────────────────────────────────────────────────────────
 BOT_TOKEN: str = _require("BOT_TOKEN")
 SHEETS_ID: str = _require("SHEETS_ID")

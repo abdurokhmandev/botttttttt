@@ -249,6 +249,7 @@ async def cb_like_no(callback: types.CallbackQuery) -> None:
 
 async def on_registered(bot: Bot, user_id: int) -> None:
     """
+<<<<<<< HEAD
     Foydalanuvchi ro'yxatdan o'tganda chaqiriladi.
     Pending funnel holatlarini yopib, podcastlar ro'yxati va reply menu yuboriladi.
     """
@@ -265,8 +266,11 @@ async def on_registered(bot: Bot, user_id: int) -> None:
                 "Rahmat, mehmon. Endi siz bizning farzand tarbiyasi haqida "
                 "qayg'uradigan ota-onalar jamoamizga qo'shildingiz.\n\n"
                 "Quyidagi darslardan xohlaganingizni tanlab olishingiz mumkin:"
+
             ),
+            markup=_kb_get_list(),
         )
+
         if PODCASTS:
             await bot.send_message(
                 chat_id=user_id,
@@ -301,9 +305,11 @@ async def on_registered(bot: Bot, user_id: int) -> None:
                 ),
                 markup=_kb_school(),
             )
+
+        state_store.set_metadata(user_id, "funnel_state", "REGISTERED_LIST_OFFERED")
+
     except Exception as e:
         logger.error("❌ on_registered user=%s: %s", user_id, e)
-
 
 async def cb_school_yes(callback: types.CallbackQuery) -> None:
     """Ha, maktab haqida ma'lumot kerak — school info + lead guruhiga."""

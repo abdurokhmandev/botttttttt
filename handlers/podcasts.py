@@ -119,6 +119,7 @@ async def handle_podcast_callback(callback: types.CallbackQuery) -> None:
     current_state = state_store.get_state(user_id)
     funnel_state = state_store.get_metadata(user_id, "funnel_state")
     came_from_funnel = (funnel_state == state_store.WANT_MORE_ASKED)
+    is_registered = (current_state == state_store.REGISTERED)
 
     is_registered = current_state == state_store.REGISTERED
     should_start_funnel = not is_registered
@@ -162,15 +163,19 @@ async def handle_podcast_callback(callback: types.CallbackQuery) -> None:
                     title=title,
                     performer="Rahimov School"
                 )
-            # Video yuborildi — 30 daqiqa kutish boshlaydi
-            if should_start_funnel:
-                state_store.set_metadata(user_id, "funnel_state", state_store.VIDEO_SENT)
-                state_store.set_metadata(user_id, "video_sent_ts", time.time())
-                state_store.set_metadata(user_id, "last_video_idx", idx)
-            if came_from_funnel and should_start_funnel:
-                import asyncio
+
+            # Video yuborildi — 3 sekund kutib yangi xabar yuboriladi
+            state_store.set_metadata(user_id, "funnel_state", state_store.VIDEO_SENT)
+            state_store.set_metadata(user_id, "video_sent_ts", time.time())
+            state_store.set_metadata(user_id, "last_video_idx", idx)
+            import asyncio
+            if came_from_funnel:
+
                 from handlers.funnel import send_like_question
                 asyncio.create_task(send_like_question(callback.message.bot, user_id))
+            elif not is_registered:
+                from handlers.user_video import send_ilmli_message
+                asyncio.create_task(send_ilmli_message(callback.message.bot, user_id))
             return
         except Exception as e:
             logger.error("Suhbat yuborishda xatolik (idx=%d, type=%s): %s", idx, file_type, e)
@@ -185,6 +190,10 @@ async def handle_podcast_callback(callback: types.CallbackQuery) -> None:
                     import asyncio
                     from handlers.funnel import send_like_question
                     asyncio.create_task(send_like_question(callback.message.bot, user_id))
+                elif not is_registered:
+                    import asyncio
+                    from handlers.user_video import send_ilmli_message
+                    asyncio.create_task(send_ilmli_message(callback.message.bot, user_id))
                 return
             except:
                 pass
@@ -199,6 +208,10 @@ async def handle_podcast_callback(callback: types.CallbackQuery) -> None:
         import asyncio
         from handlers.funnel import send_like_question
         asyncio.create_task(send_like_question(callback.message.bot, user_id))
+    elif not is_registered:
+        import asyncio
+        from handlers.user_video import send_ilmli_message
+        asyncio.create_task(send_ilmli_message(callback.message.bot, user_id))
 
 
 # ── Admin: Suhbat qo'shish ───────────────────────────────────────────────────

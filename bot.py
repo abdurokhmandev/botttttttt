@@ -6,16 +6,16 @@ from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from config import BOT_TOKEN
-from handlers.start  import register_start_handler
+from handlers.start import register_start_handler
 from handlers.webapp import register_webapp_handler, webapp_api_handler
 from handlers.videos import register_video_handlers
 from handlers.school import register_school_handler
 from handlers.admin import register_admin_handlers
 from handlers.admin_api import admin_stats_api_handler
 from handlers.podcasts import register_podcast_handlers
-from services.reminder import check_reminders
 from handlers.funnel import register_funnel_handlers
-
+from handlers.user_video import register_user_video_handlers
+from services.reminder import check_reminders
 import os
 from aiohttp import web
 import aiohttp_cors
@@ -33,13 +33,15 @@ dp  = Dispatcher(bot, storage=MemoryStorage())
 scheduler: AsyncIOScheduler | None = None
 
 # ── Register Handlers ─────────────────────────────────────────────────────────
-register_webapp_handler(dp)   # WebApp data — eng birinchi (state='*' bilan)
+register_user_video_handlers(dp)  # Birinchi — foydalanuvchi video yuborganda
+register_webapp_handler(dp)       # WebApp data — state='*' bilan
 register_start_handler(dp)
 register_video_handlers(dp)
 register_school_handler(dp)
-register_funnel_handlers(dp)  # Funnel — podkastdan oldin
+register_funnel_handlers(dp)  
 register_podcast_handlers(dp)
 register_admin_handlers(dp)
+register_user_video_handlers(dp)
 
 
 # ── Scheduler ─────────────────────────────────────────────────────────────────
