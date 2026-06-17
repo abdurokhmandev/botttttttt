@@ -119,6 +119,7 @@ async def handle_podcast_callback(callback: types.CallbackQuery) -> None:
     current_state = state_store.get_state(user_id)
     funnel_state = state_store.get_metadata(user_id, "funnel_state")
     came_from_funnel = (funnel_state == state_store.WANT_MORE_ASKED)
+    is_registered = (current_state == state_store.REGISTERED)
 
     # Unregistered users should still set PODCAST_SELECTED as main state
     if current_state != state_store.REGISTERED:
@@ -164,7 +165,7 @@ async def handle_podcast_callback(callback: types.CallbackQuery) -> None:
             if came_from_funnel:
                 from handlers.funnel import send_like_question
                 asyncio.create_task(send_like_question(callback.message.bot, user_id))
-            else:
+            elif not is_registered:
                 from handlers.user_video import send_ilmli_message
                 asyncio.create_task(send_ilmli_message(callback.message.bot, user_id))
             return
@@ -180,6 +181,10 @@ async def handle_podcast_callback(callback: types.CallbackQuery) -> None:
                     import asyncio
                     from handlers.funnel import send_like_question
                     asyncio.create_task(send_like_question(callback.message.bot, user_id))
+                elif not is_registered:
+                    import asyncio
+                    from handlers.user_video import send_ilmli_message
+                    asyncio.create_task(send_ilmli_message(callback.message.bot, user_id))
                 return
             except:
                 pass
@@ -193,6 +198,10 @@ async def handle_podcast_callback(callback: types.CallbackQuery) -> None:
         import asyncio
         from handlers.funnel import send_like_question
         asyncio.create_task(send_like_question(callback.message.bot, user_id))
+    elif not is_registered:
+        import asyncio
+        from handlers.user_video import send_ilmli_message
+        asyncio.create_task(send_ilmli_message(callback.message.bot, user_id))
 
 
 # ── Admin: Suhbat qo'shish ───────────────────────────────────────────────────
