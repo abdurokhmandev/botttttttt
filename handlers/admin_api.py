@@ -160,6 +160,28 @@ async def admin_stats_api_handler(request: web.Request, bot: Bot) -> web.Respons
             g = u.get("grade") or "Noma'lum"
             grade_counts[g] = grade_counts.get(g, 0) + 1
 
+        funnel_metrics = []
+        for str_uid, u in all_users.items():
+            uid = int(str_uid)
+            profile = state_store.get_profile(uid) or {}
+            
+            start_ts = u.get("start_ts")
+            # If no start_ts but user is registered, fallback to their last ts to avoid empty data
+            if not start_ts and u.get("ts"): start_ts = u.get("ts")
+            
+            funnel_metrics.append({
+                "user_id": str(uid),
+                "name": profile.get("name", "Noma'lum"),
+                "phone": profile.get("phone", "—"),
+                "start_ts": start_ts,
+                "registered_ts": u.get("registered_ts"),
+                "school_ask_ts": u.get("school_ask_ts"),
+                "funnel_finished_ts": u.get("funnel_finished_ts"),
+                "current_state": u.get("funnel_state") or u.get("state", "Noma'lum")
+            })
+            
+        funnel_metrics.sort(key=lambda x: x.get("start_ts") or 0, reverse=True)
+
         return web.json_response({
             "ok": True,
             "data": {
@@ -167,7 +189,8 @@ async def admin_stats_api_handler(request: web.Request, bot: Bot) -> web.Respons
                 "video_stats": video_data,
                 "recent_users": recent_users,
                 "district_stats": {"labels": list(district_counts.keys()), "data": list(district_counts.values())},
-                "grade_stats": {"labels": list(grade_counts.keys()), "data": list(grade_counts.values())}
+                "grade_stats": {"labels": list(grade_counts.keys()), "data": list(grade_counts.values())},
+                "funnel_metrics": funnel_metrics
             }
         })
 

@@ -190,6 +190,7 @@ async def handle_podcast_callback(callback: types.CallbackQuery) -> None:
                     async def delayed_school_ask():
                         await asyncio.sleep(2)
                         await _send(callback.message.bot, user_id, "school_ask", text, _kb_school())
+                        state_store.set_metadata(user_id, "school_ask_ts", time.time())
                     asyncio.create_task(delayed_school_ask())
 
             import asyncio
@@ -229,6 +230,7 @@ async def handle_podcast_callback(callback: types.CallbackQuery) -> None:
                         async def delayed_school_ask():
                             await asyncio.sleep(2)
                             await _send(callback.message.bot, user_id, "school_ask", text, _kb_school())
+                            state_store.set_metadata(user_id, "school_ask_ts", time.time())
                         asyncio.create_task(delayed_school_ask())
 
                 if came_from_funnel and should_start_funnel:
@@ -269,6 +271,7 @@ async def handle_podcast_callback(callback: types.CallbackQuery) -> None:
             async def delayed_school_ask():
                 await asyncio.sleep(2)
                 await _send(callback.message.bot, user_id, "school_ask", text, _kb_school())
+                state_store.set_metadata(user_id, "school_ask_ts", time.time())
             asyncio.create_task(delayed_school_ask())
 
     if came_from_funnel and should_start_funnel:

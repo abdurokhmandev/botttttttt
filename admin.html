@@ -200,6 +200,7 @@
             <div class="logo-box"><i class="fas fa-school"></i><span>Rahimov Panel</span></div>
             <ul class="nav-list">
                 <li class="nav-item active" onclick="switchTab('dashboard')"><i class="fas fa-chart-pie"></i><span class="nav-text">Dashboard</span></li>
+                <li class="nav-item" onclick="switchTab('analytics')"><i class="fas fa-chart-line"></i><span class="nav-text">Mijozlar Yo'li</span></li>
                 <li class="nav-item" onclick="switchTab('podcasts')"><i class="fas fa-microphone-lines"></i><span class="nav-text">Suhbatlar</span></li>
                 <li class="nav-item" onclick="switchTab('broadcast')"><i class="fas fa-paper-plane"></i><span class="nav-text">Xabar yuborish</span></li>
                 <li class="nav-item" onclick="switchTab('settings')"><i class="fas fa-cog"></i><span class="nav-text">Sozlamalari</span></li>
@@ -216,6 +217,28 @@
                 <div class="card">
                     <div class="card-title">Oxirgi Ro'yxatdan O'tganlar</div>
                     <table><thead><tr><th>Ism Familiya</th><th>Telefon</th><th>Hudud</th><th>Sinf</th></tr></thead><tbody id="table-users"></tbody></table>
+                </div>
+            </div>
+
+            <!-- Analytics -->
+            <div id="tab-analytics" class="fade-in hidden">
+                <div class="section-header"><h2>Mijozlar Yo'li (Funnel Metrics)</h2><button class="btn-primary" style="width:auto; padding:10px 20px;" onclick="fetchData()">Yangilash</button></div>
+                <div class="card" style="overflow-x: auto;">
+                    <div class="card-title">Foydalanuvchilar qadamma-qadam tahlili</div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Ism</th>
+                                <th>Telefon</th>
+                                <th>Boshladi</th>
+                                <th>Ro'yxatdan O'tish</th>
+                                <th>Darslarni Tugatish (3 ta)</th>
+                                <th>Maktab tanlovi</th>
+                                <th>Holat</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-analytics"></tbody>
+                    </table>
                 </div>
             </div>
 
@@ -308,6 +331,37 @@
             document.getElementById('table-users').innerHTML = data.recent_users.map(u => `
                 <tr><td>${u.name}</td><td>${u.phone}</td><td>${u.district}</td><td>${u.grade}</td></tr>
             `).join('');
+
+            // Render Funnel Analytics
+            if (data.funnel_metrics) {
+                document.getElementById('table-analytics').innerHTML = data.funnel_metrics.map(f => {
+                    const startStr = f.start_ts ? new Date(f.start_ts * 1000).toLocaleString('uz-UZ') : "Noma'lum";
+                    const regTime = formatDuration(f.start_ts, f.registered_ts);
+                    const finishTime = formatDuration(f.registered_ts || f.start_ts, f.school_ask_ts);
+                    const schoolRespTime = formatDuration(f.school_ask_ts, f.funnel_finished_ts);
+                    
+                    return `
+                        <tr>
+                            <td>${f.name}</td>
+                            <td>${f.phone}</td>
+                            <td><small>${startStr}</small></td>
+                            <td>${regTime}</td>
+                            <td>${finishTime}</td>
+                            <td>${schoolRespTime}</td>
+                            <td><span style="padding:4px 8px; background:#e2e8f0; border-radius:4px; font-size:12px;">${f.current_state}</span></td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+        }
+
+        function formatDuration(ts1, ts2) {
+            if (!ts1 || !ts2 || ts2 < ts1) return "—";
+            const diff = ts2 - ts1;
+            if (diff < 60) return `${Math.floor(diff)} soniya`;
+            if (diff < 3600) return `${Math.floor(diff / 60)} daqiqa`;
+            if (diff < 86400) return `${Math.floor(diff / 3600)} soat, ${Math.floor((diff % 3600) / 60)} daq`;
+            return `${Math.floor(diff / 86400)} kun`;
         }
 
         function switchTab(tab) {

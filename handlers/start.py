@@ -176,6 +176,9 @@ async def cmd_start(message: types.Message) -> None:
         return
 
     state_store.set_state(user_id, state_store.STARTED)
+    if not state_store.get_metadata(user_id, "start_ts"):
+        import time
+        state_store.set_metadata(user_id, "start_ts", time.time())
 
     caption = (
         "Assalomu alaykum, mehmon!\n\n"

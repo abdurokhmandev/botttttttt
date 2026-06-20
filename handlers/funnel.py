@@ -257,6 +257,10 @@ async def on_registered(bot: Bot, user_id: int) -> None:
         from handlers.webapp import _build_main_reply_keyboard
 
         state_store.clear_funnel_progress(user_id)
+        
+        import time
+        if not state_store.get_metadata(user_id, "registered_ts"):
+            state_store.set_metadata(user_id, "registered_ts", time.time())
 
         # Eski "Video farzandingizni..." xabarini o'chirish (agar bo'lsa)
         old_msg_id = state_store.get_metadata(user_id, "ilmli_msg_id")
@@ -357,6 +361,8 @@ async def cb_school_yes(callback: types.CallbackQuery) -> None:
         except Exception:
             pass
 
+    import time
+    state_store.set_metadata(user_id, "funnel_finished_ts", time.time())
     state_store.set_metadata(user_id, "funnel_state", "FINISHED")
 
 
@@ -364,6 +370,8 @@ async def cb_school_no(callback: types.CallbackQuery) -> None:
     """Yo'q — rahmat."""
     await callback.answer()
     await callback.message.answer("Rahmat, bizni kuzatishda davom eting 😊 @RahimovSchool")
+    import time
+    state_store.set_metadata(callback.from_user.id, "funnel_finished_ts", time.time())
     state_store.set_metadata(callback.from_user.id, "funnel_state", "FINISHED")
 
 
