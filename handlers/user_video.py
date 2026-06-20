@@ -226,8 +226,24 @@ async def cb_uv_join(callback: types.CallbackQuery):
 # ── "Ro'yxatini olish" tugmasi ─────────────────────────────────────────────
 async def cb_uv_get_list(callback: types.CallbackQuery):
     await callback.answer()
-    await _send(callback.message.bot, callback.from_user.id, "img33", "Darslar ro'yxati:", _kb_lessons())
-
+    try:
+        await callback.message.delete()
+    except Exception:
+        pass
+    
+    from handlers.podcasts import _podcast_list_text, _podcast_list_keyboard
+    from handlers.webapp import _build_main_reply_keyboard
+    
+    await callback.message.answer(
+        text=f"🎧 <b>Qaysi darsni tinglamoqchisiz?</b>\n\n{_podcast_list_text()}",
+        parse_mode="HTML",
+        reply_markup=_podcast_list_keyboard()
+    )
+    
+    await callback.message.answer(
+        text="Pastdagi menyu orqali darslar va boshqa bo'limlarni tanlashingiz mumkin:",
+        reply_markup=_build_main_reply_keyboard()
+    )
 
 # ── Dars tugmasi bosildi — doimiy xotirada sanaladi ──────────────────────────
 async def cb_uv_lesson(callback: types.CallbackQuery):

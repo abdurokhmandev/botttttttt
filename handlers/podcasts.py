@@ -164,13 +164,36 @@ async def handle_podcast_callback(callback: types.CallbackQuery) -> None:
                     performer="Rahimov School"
                 )
 
-            # Video yuborildi — 3 sekund kutib yangi xabar yuboriladi
+            # Video yuborildi
             state_store.set_metadata(user_id, "funnel_state", state_store.VIDEO_SENT)
             state_store.set_metadata(user_id, "video_sent_ts", time.time())
             state_store.set_metadata(user_id, "last_video_idx", idx)
+
+            # Track watched videos for registered users
+            if is_registered:
+                watched = state_store.get_metadata(user_id, "uv_watched_lessons") or []
+                str_idx = str(idx)
+                if str_idx not in watched:
+                    watched.append(str_idx)
+                    state_store.set_metadata(user_id, "uv_watched_lessons", watched)
+                
+                if len(watched) == 3:
+                    text = (
+                        "Aytgancha, sizga ushbu darslarni o'tib berayotgan Aziz Rahimovning "
+                        "maktablari — Rahimov School haqida eshitganmisiz?\n\n"
+                        "Agar farzandingizga maktab qidiryotgan bo'lsangiz, Rahimov School "
+                        "haqida ma'lumot berishimiz mumkin."
+                    )
+                    from handlers.funnel import _kb_school
+                    from handlers.user_video import _send
+                    import asyncio
+                    async def delayed_school_ask():
+                        await asyncio.sleep(2)
+                        await _send(callback.message.bot, user_id, "school_ask", text, _kb_school())
+                    asyncio.create_task(delayed_school_ask())
+
             import asyncio
             if came_from_funnel:
-
                 from handlers.funnel import send_like_question
                 asyncio.create_task(send_like_question(callback.message.bot, user_id))
             elif not is_registered:
@@ -186,6 +209,28 @@ async def handle_podcast_callback(callback: types.CallbackQuery) -> None:
                     state_store.set_metadata(user_id, "funnel_state", state_store.VIDEO_SENT)
                     state_store.set_metadata(user_id, "video_sent_ts", time.time())
                     state_store.set_metadata(user_id, "last_video_idx", idx)
+                
+                if is_registered:
+                    watched = state_store.get_metadata(user_id, "uv_watched_lessons") or []
+                    str_idx = str(idx)
+                    if str_idx not in watched:
+                        watched.append(str_idx)
+                        state_store.set_metadata(user_id, "uv_watched_lessons", watched)
+                    if len(watched) == 3:
+                        text = (
+                            "Aytgancha, sizga ushbu darslarni o'tib berayotgan Aziz Rahimovning "
+                            "maktablari — Rahimov School haqida eshitganmisiz?\n\n"
+                            "Agar farzandingizga maktab qidiryotgan bo'lsangiz, Rahimov School "
+                            "haqida ma'lumot berishimiz mumkin."
+                        )
+                        from handlers.funnel import _kb_school
+                        from handlers.user_video import _send
+                        import asyncio
+                        async def delayed_school_ask():
+                            await asyncio.sleep(2)
+                            await _send(callback.message.bot, user_id, "school_ask", text, _kb_school())
+                        asyncio.create_task(delayed_school_ask())
+
                 if came_from_funnel and should_start_funnel:
                     import asyncio
                     from handlers.funnel import send_like_question
@@ -204,6 +249,28 @@ async def handle_podcast_callback(callback: types.CallbackQuery) -> None:
         state_store.set_metadata(user_id, "funnel_state", state_store.VIDEO_SENT)
         state_store.set_metadata(user_id, "video_sent_ts", time.time())
         state_store.set_metadata(user_id, "last_video_idx", idx)
+    
+    if is_registered:
+        watched = state_store.get_metadata(user_id, "uv_watched_lessons") or []
+        str_idx = str(idx)
+        if str_idx not in watched:
+            watched.append(str_idx)
+            state_store.set_metadata(user_id, "uv_watched_lessons", watched)
+        if len(watched) == 3:
+            text = (
+                "Aytgancha, sizga ushbu darslarni o'tib berayotgan Aziz Rahimovning "
+                "maktablari — Rahimov School haqida eshitganmisiz?\n\n"
+                "Agar farzandingizga maktab qidiryotgan bo'lsangiz, Rahimov School "
+                "haqida ma'lumot berishimiz mumkin."
+            )
+            from handlers.funnel import _kb_school
+            from handlers.user_video import _send
+            import asyncio
+            async def delayed_school_ask():
+                await asyncio.sleep(2)
+                await _send(callback.message.bot, user_id, "school_ask", text, _kb_school())
+            asyncio.create_task(delayed_school_ask())
+
     if came_from_funnel and should_start_funnel:
         import asyncio
         from handlers.funnel import send_like_question

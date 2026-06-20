@@ -354,7 +354,7 @@ async def cb_school_yes(callback: types.CallbackQuery) -> None:
 async def cb_school_no(callback: types.CallbackQuery) -> None:
     """Yo'q — rahmat."""
     await callback.answer()
-    await callback.message.answer("Rahmat, bizni kuzatishda davom eting 😊")
+    await callback.message.answer("Rahmat, bizni kuzatishda davom eting 😊 @RahimovSchool")
     state_store.set_metadata(callback.from_user.id, "funnel_state", "FINISHED")
 
 
