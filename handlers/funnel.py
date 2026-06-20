@@ -249,62 +249,32 @@ async def cb_like_no(callback: types.CallbackQuery) -> None:
 
 async def on_registered(bot: Bot, user_id: int) -> None:
     """
-<<<<<<< HEAD
     Foydalanuvchi ro'yxatdan o'tganda chaqiriladi.
     Pending funnel holatlarini yopib, podcastlar ro'yxati va reply menu yuboriladi.
     """
     try:
-        from config import PODCASTS
-        from handlers.podcasts import _podcast_list_keyboard, _podcast_list_text
+        from handlers.user_video import _kb_get_list
         from handlers.webapp import _build_main_reply_keyboard
 
         state_store.clear_funnel_progress(user_id)
 
+        # 1. Asosiy tabrik xabari va darslar tugmasi
         await bot.send_message(
             chat_id=user_id,
             text=(
-                "Rahmat, mehmon. Endi siz bizning farzand tarbiyasi haqida "
-                "qayg'uradigan ota-onalar jamoamizga qo'shildingiz.\n\n"
-                "Quyidagi darslardan xohlaganingizni tanlab olishingiz mumkin:"
-
+                "🎉 Rahmat, mehmon. Endi siz bizning farzand tarbiyasi haqida "
+                "qayg'uradigan \"Ilmli ota-onalar\" jamoamizga qo'shildingiz. "
+                "Yangi darslarimizni kuting."
             ),
-            markup=_kb_get_list(),
+            reply_markup=_kb_get_list(),
         )
 
-        if PODCASTS:
-            await bot.send_message(
-                chat_id=user_id,
-                text=(
-                    "🎧 <b>Qaysi darsni tinglamoqchisiz?</b>\n\n"
-                    f"{_podcast_list_text()}"
-                ),
-                parse_mode="HTML",
-                reply_markup=_podcast_list_keyboard(),
-            )
-        else:
-            await bot.send_message(
-                chat_id=user_id,
-                text="📹 Hozircha suhbatlar mavjud emas. Tez orada qo'shiladi!",
-            )
-
+        # 2. Asosiy menyu (reply keyboard)
         await bot.send_message(
             chat_id=user_id,
             text="Pastdagi menyu orqali darslar va boshqa bo'limlarni tanlashingiz mumkin:",
             reply_markup=_build_main_reply_keyboard(),
         )
-
-        if False and PODCASTS:
-            await _send_photo_or_text(
-                bot, user_id,
-                folder="school_ask",
-                text=(
-                    "Aytgancha, sizga ushbu darslarni o'tib berayotgan Aziz "
-                    "Rahimovning maktablari — Rahimov School haqida "
-                    "eshitganmisiz? Agar farzandingizga maktab qidiryotgan "
-                    "bo'lsangiz, Rahimov School haqida ma'lumot berishimiz mumkin."
-                ),
-                markup=_kb_school(),
-            )
 
         state_store.set_metadata(user_id, "funnel_state", "REGISTERED_LIST_OFFERED")
 
