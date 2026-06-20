@@ -180,7 +180,10 @@ async def send_ilmli_message(bot, user_id: int) -> None:
         "qo'shilsangiz kifoya:"
     )
     try:
-        await _send(bot, user_id, "img11", text, _kb_join())
+        msg = await _send(bot, user_id, "img11", text, _kb_join())
+        from storage import state_store
+        if msg:
+            state_store.set_metadata(user_id, "ilmli_msg_id", msg.message_id)
     except Exception as e:
         logger.error("send_ilmli_message xato user=%s: %s", user_id, e)
 
@@ -204,7 +207,10 @@ async def handle_user_video(message: types.Message):
         'Buning uchun 1 daqiqa ajratib, botimizdagi "Ilmli ota-onalar" safiga '
         "qo'shilsangiz kifoya:"
     )
-    await _send(message.bot, message.chat.id, "img11", text, _kb_join())
+    msg = await _send(message.bot, message.chat.id, "img11", text, _kb_join())
+    from storage import state_store
+    if msg:
+        state_store.set_metadata(message.from_user.id, "ilmli_msg_id", msg.message_id)
 
 
 # ── Zaxira: WEBAPP_URL sozlanmaganda ishlaydigan eski callback ───────────────

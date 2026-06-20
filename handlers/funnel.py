@@ -258,6 +258,15 @@ async def on_registered(bot: Bot, user_id: int) -> None:
 
         state_store.clear_funnel_progress(user_id)
 
+        # Eski "Video farzandingizni..." xabarini o'chirish (agar bo'lsa)
+        old_msg_id = state_store.get_metadata(user_id, "ilmli_msg_id")
+        if old_msg_id:
+            try:
+                await bot.delete_message(chat_id=user_id, message_id=old_msg_id)
+                state_store.set_metadata(user_id, "ilmli_msg_id", None)
+            except Exception:
+                pass
+
         # 1. Asosiy tabrik xabari va darslar tugmasi
         await bot.send_message(
             chat_id=user_id,
